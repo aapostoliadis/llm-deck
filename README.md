@@ -15,6 +15,7 @@
   <img alt="Node.js 22.5 or newer" src="https://img.shields.io/badge/node-%E2%89%A5%2022.5-2AA87F">
   <img alt="Works with Claude Code, Claude, ChatGPT and Codex" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Claude%20%C2%B7%20ChatGPT%20%C2%B7%20Codex-EE9F25">
   <img alt="No cloud service, runs locally" src="https://img.shields.io/badge/runs-locally-9C98BC">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5A6878"></a>
 </p>
 
 <p align="center">
@@ -151,6 +152,10 @@ the private phone link.
 Delete the LLM Deck shortcuts, remove the hook entries that mention `claude-deck` from your Claude Code
 `settings.json` (or restore the `.before-llm-deck.bak` copy next to it), and delete the
 `%USERPROFILE%\.claude-deck` folder.
+
+## License
+
+[MIT](LICENSE). You're free to use, change and share LLM Deck, including in your own projects.
 
 ## Notes
 
