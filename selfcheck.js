@@ -26,7 +26,7 @@ const get = p => new Promise(res => {
 (async () => {
   section('Files');
   const runtime = ['server.js', 'hook.js', 'perm-hook.js', 'codex.js', 'extras.js', 'v3.js', 'notif.js', 'suggest.js', 'backup.js', 'defaults.js',
-    'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
+    'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
     'public/index.html', 'public/deck.css', 'public/deck.js', 'public/icons/llm-deck.ico', 'public/icons/llm-deck-32.png'];
   const missing = runtime.filter(f => !fs.existsSync(path.join(DECK, f)));
   ok('all program files present', !missing.length, missing.join(', '));
@@ -81,6 +81,15 @@ const get = p => new Promise(res => {
     ok('chat reader running', +ps("@(Get-CimInstance Win32_Process -Filter \"Name='powershell.exe'\" | Where-Object { $_.CommandLine -like '*chat-watch.ps1*' }).Count") >= 1);
     ok('Claude and ChatGPT icons copied from the apps', fs.existsSync(path.join(DECK, 'public', 'icons', 'claude.png')));
     ok('start-at-login shortcut', fs.existsSync(path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'LLM Deck.lnk')));
+  }
+
+  if (process.platform === 'darwin') {
+    section('macOS');
+    const n = require('./notif'); n.read();
+    ok('notifications readable', !n.lastError(), n.lastError() ? 'give node Full Disk Access in System Settings \u203a Privacy & Security' : '');
+    const loaded = l => spawnSync('launchctl', ['print', 'gui/' + process.getuid() + '/' + l], { encoding: 'utf8' }).status === 0;
+    ok('server starts at login (LaunchAgent)', loaded('com.llmdeck.server'));
+    ok('LLM Deck app in Applications', fs.existsSync(path.join(HOME, 'Applications', 'LLM Deck.app')));
   }
 
   section('Claude Code hooks');

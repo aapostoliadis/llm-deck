@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Platform: Windows 10 and 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-4F7BF2">
+  <img alt="Platforms: Windows and macOS" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-4F7BF2">
   <img alt="Node.js 22.5 or newer" src="https://img.shields.io/badge/node-%E2%89%A5%2022.5-2AA87F">
   <img alt="Works with Claude Code, Claude, ChatGPT and Codex" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Claude%20%C2%B7%20ChatGPT%20%C2%B7%20Codex-EE9F25">
   <img alt="No cloud service, runs locally" src="https://img.shields.io/badge/runs-locally-9C98BC">
@@ -50,7 +50,7 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 🗂️ **Four columns**: Pinned, Waiting for you, New result and Background, grouped by project.
 - 👆 **One tap** opens that exact session, chat or thread in its own app.
 - 👀 **Double-tap** a Claude Code or Codex card to read its last reply without switching windows.
-- ✅ **Allow or Deny** safe permission requests right on the card. Risky ones (deletes, pushes, sending, publishing) always go to the app.
+- ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app.
 - 💬 **Quick replies** such as "Yes, continue", typed into the right conversation for you.
 - 📈 **Usage limits** for Claude and Codex, with a forecast of when you'd hit them at the current pace.
 - 🔔 **A soft chime** when something needs you, a reminder if it waits too long, and quiet hours.
@@ -67,6 +67,7 @@ one glance shows what every session is doing, and one tap takes you straight to 
 | Tap | Open the session, chat or thread |
 | Double-tap | Peek at the last reply (Claude Code and Codex) |
 | Press and hold | Pin or unpin its project |
+| Hold **Allow** for a second | Approve a safe permission request (tap **Deny** to refuse) |
 | Swipe a result | Mark it as seen |
 | Swipe an idle card | Hide it (Settings brings hidden cards back) |
 | Tap a project heading | Show only that project; tap again for everything |
@@ -76,10 +77,10 @@ Press **F11** to switch the deck between full screen and a window.
 
 ## Requirements
 
-- Windows 10 or 11. The core dashboard also runs on macOS and Linux, without the desktop-app features.
+- Windows 10 or 11, or macOS 13 or newer (macOS support is new, see [Windows and macOS](#windows-and-macos)). The core dashboard also runs on Linux.
 - [Node.js](https://nodejs.org) 22.5 or newer.
 - [Claude Code](https://docs.claude.com/en/docs/claude-code/overview).
-- Optional: the Claude, ChatGPT and Codex desktop apps, and Microsoft Edge for the full-screen window.
+- Optional: the Claude, ChatGPT and Codex desktop apps, and Microsoft Edge or Google Chrome for the full-screen window.
 
 ## Install
 
@@ -89,17 +90,38 @@ cd llm-deck
 node install.js
 ```
 
-The installer copies the program to `%USERPROFILE%\.claude-deck`, registers the Claude Code hooks
-(saving a backup of your Claude Code settings first), creates **LLM Deck** shortcuts on the desktop
-and for start at login, and starts the deck. It opens full screen on the smaller of your displays.
+The installer copies the program to `~/.claude-deck` (`%USERPROFILE%\.claude-deck` on Windows), registers the
+Claude Code hooks (saving a backup of your Claude Code settings first), sets the deck to start at login, and starts it.
+On Windows it creates **LLM Deck** shortcuts on the desktop and in Startup; on macOS it adds login agents and an
+**LLM Deck** app in `~/Applications`. The deck opens full screen on the smaller of your displays.
 
 To update, pull the latest version and run `node install.js` again. Your settings are kept.
 
 Check that everything works:
 
 ```
-node "%USERPROFILE%\.claude-deck\selfcheck.js"
+node "%USERPROFILE%\.claude-deck\selfcheck.js"     # Windows
+node ~/.claude-deck/selfcheck.js                   # macOS
 ```
+
+## Windows and macOS
+
+| Feature | Windows | macOS |
+|---|---|---|
+| Claude Code sessions, limits, peek, phone access, backups | ✓ | ✓ |
+| Tap to open the exact Claude Code session or Codex thread | ✓ | ✓ |
+| Hold to allow, tap to deny | ✓ | ✓ |
+| Claude chats | From the app's sidebar and notifications | From notifications ¹ |
+| ChatGPT chats | From the app's sidebar | Not yet |
+| Quick replies | Claude Code, Codex, Claude and ChatGPT chats | Claude Code and Codex ² |
+| Start at login | Startup shortcut and watchdog | Login agents (restarted automatically) |
+| Warnings after app updates | ✓ | Version tracking only |
+
+¹ Give **node** Full Disk Access in System Settings › Privacy & Security, so the deck can read Notification Center.  
+² Give **node** Accessibility access in the same place, so the deck can type the reply.
+
+macOS support is new and hasn't had much use on real Macs yet. If something doesn't work, please open an issue with
+the output of the self-check.
 
 ## Settings
 
@@ -127,7 +149,9 @@ the private phone link.
 
 | Problem | What to do |
 |---|---|
-| The phone can't connect | Allow Node.js through Windows Firewall on private networks, as described above. |
+| The phone can't connect | Allow Node.js through Windows Firewall on private networks, as described above. On macOS, allow incoming connections for node when asked. |
+| No Claude chat cards on macOS | Give node Full Disk Access, then restart the deck. |
+| Quick replies do nothing on macOS | Give node Accessibility access in System Settings › Privacy & Security. |
 | Taps on the touch screen land on the other monitor | Search Start for **Calibrate the screen for pen or touch input**, choose **Setup** and tap the touch screen. |
 | Chat cards stop updating after an app update | The left panel says so. Please open an issue with the app's version. |
 | ChatGPT cards look out of date | The deck can only read ChatGPT while its window is open; minimised is fine. |
@@ -140,16 +164,18 @@ the private phone link.
 | `server.js` | Local web server: gathers every source into cards and serves the dashboard |
 | `hook.js`, `perm-hook.js` | Claude Code hooks for session events and permission requests |
 | `codex.js` | Reads Codex threads and limits |
-| `chat-watch.ps1`, `notif.js` | Read the Claude and ChatGPT desktop apps and their Windows notifications |
-| `focus-*.ps1`, `reply.ps1` | Open the right session or chat, and type quick replies |
+| `chat-watch.ps1`, `notif.js`, `notif-mac.js` | Read the Claude and ChatGPT desktop apps and their Windows or macOS notifications |
+| `platform.js` | The few things that work differently on Windows, macOS and Linux |
+| `focus-*.ps1`, `reply.ps1`, `reply-mac.applescript` | Open the right session or chat, and type quick replies |
 | `extras.js`, `v3.js`, `suggest.js`, `backup.js` | Permissions, settings, phone access, group suggestions, backups |
-| `watchdog.ps1`, `open-deck.ps1`, `start-deck.vbs` | Keep it running and open the full-screen window |
+| `watchdog.ps1`, `open-deck.ps1`, `start-deck.vbs`, `open-deck.sh` | Keep it running and open the full-screen window |
 | `public/` | The dashboard itself: `index.html`, `deck.css`, `deck.js` and the icons |
-| `selfcheck.js`, `defaults.js`, `install.js` | Automated checks, default settings, installer |
+| `selfcheck.js`, `defaults.js`, `install.js`, `install-mac.js` | Automated checks, default settings, installer |
 
 ## Uninstall
 
-Delete the LLM Deck shortcuts, remove the hook entries that mention `claude-deck` from your Claude Code
+Delete the LLM Deck shortcuts (on macOS: `~/Applications/LLM Deck.app` and the two `com.llmdeck` files in
+`~/Library/LaunchAgents`), remove the hook entries that mention `claude-deck` from your Claude Code
 `settings.json` (or restore the `.before-llm-deck.bak` copy next to it), and delete the
 `%USERPROFILE%\.claude-deck` folder.
 

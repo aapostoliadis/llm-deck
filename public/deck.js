@@ -119,7 +119,7 @@
   /* ---------- v2: permissions, swipe, alerts, tidy, groups, health ---------- */
   let OLDER_H = 3, showOlder = false, swipeCard = null, swiped = false, sx = 0, sy = 0;
   const permBlock = s => '<span class="perm"><span class="perm-sum">' + esc(s.perm.summary) + '</span>'
-    + '<span class="perm-actions"><span class="pbtn allow" role="button" data-act="allow" data-req="' + esc(s.perm.id) + '">Allow</span>'
+    + '<span class="perm-actions"><span class="pbtn allow" role="button" data-act="allow" data-req="' + esc(s.perm.id) + '">Hold to allow</span>'
     + '<span class="pbtn deny" role="button" data-act="deny" data-req="' + esc(s.perm.id) + '">Deny</span></span></span>';
 
   const arrange = (g, list, now) => {
@@ -535,7 +535,7 @@
   const WIZ = [
     { key: 'chime', title: 'Chime and pulse', text: 'Listen for a two-note chime and watch the screen edge pulse.', ask: true,
       run() { document.body.classList.remove('alerting'); void document.body.offsetWidth; document.body.classList.add('alerting'); chime(); } },
-    { key: 'perm', title: 'Allow and Deny', text: 'A Self-test card is under \u201cWaiting for you\u201d. Tap Allow or Deny on it.',
+    { key: 'perm', title: 'Allow and Deny', text: 'A Self-test card is under \u201cWaiting for you\u201d. Press and hold Allow for a second, or tap Deny.',
       run() { addTestCard({ id: 'selftest-perm', state: 'waiting', perm: { id: 'selftest-' + Date.now(), tool: 'Bash', summary: 'echo self-test' } }); } },
     { key: 'swipe', title: 'Swipe to dismiss', text: 'A Self-test card is under \u201cNew result\u201d. Swipe it left or right.',
       run() { addTestCard({ id: 'selftest-swipe', state: 'ready', detail: 'Test result' }); } },
@@ -545,7 +545,7 @@
       async run() {
         try {
           const r = await fetch('/api/selftest/reply', { method: 'POST' }); const j = await r.json().catch(() => ({}));
-          wizPass('reply', !!j.ok, j.ok ? '' : (j.output || 'didn\u2019t type'));
+          wizPass('reply', !!j.ok, j.ok ? (j.note || '') : (j.output || 'didn\u2019t type'));
         } catch (_) { wizPass('reply', false, 'server unreachable'); }
       } },
     { key: 'night', title: 'Night dimming', text: 'The deck switches to night mode and dims. Tap anywhere to wake it.',
@@ -608,7 +608,7 @@
   };
   let sessions = [];
   function render(now = Date.now()) {
-    if (swipeCard) return;
+    if (swipeCard || allowTimer) return;
     const groups = { pinned: [], waiting: [], ready: [], background: [] };
     for (const s of (focusGroup ? sessions.filter(x => (x.group || 'Other') === focusGroup) : sessions)) {
       if (s.pinned) groups.pinned.push(s);
@@ -698,13 +698,24 @@
     const grp = e.target.closest('.grp[data-g]');
     if (grp) { focusGroup = focusGroup ? null : grp.dataset.g; render(); updateFocusBar(); return; }
     const act = e.target.closest('[data-act]');
-    if (act) { e.stopPropagation(); answerPerm(act.dataset.req, act.dataset.act); return; }
+    if (act) { e.stopPropagation(); if (act.dataset.act === 'allow') { if (!holdDone) toast('Press and hold Allow for a second'); holdDone = false; return; } answerPerm(act.dataset.req, act.dataset.act); return; }
     if (e.target.closest('.more')) { showOlder = !showOlder; render(); return; }
     if (swiped) { swiped = false; return; }
     const card = e.target.closest('.card'); if (!card) return;
     if (held) { held = false; return; }
     routeTap(card);
   });
+
+  /* hold-to-allow: Allow needs a one-second press, so a stray tap can't approve anything */
+  let allowTimer = null, holdDone = false;
+  board.addEventListener('pointerdown', e => {
+    const b = e.target.closest('[data-act="allow"]'); if (!b) return;
+    clearTimeout(allowTimer); holdDone = false; b.classList.add('arming');
+    allowTimer = setTimeout(() => { allowTimer = null; b.classList.remove('arming'); holdDone = true; answerPerm(b.dataset.req, 'allow'); }, 1000);
+  });
+  const stopAllow = () => { if (allowTimer) { clearTimeout(allowTimer); allowTimer = null; } document.querySelectorAll('.pbtn.arming').forEach(x => x.classList.remove('arming')); };
+  ['pointerup', 'pointercancel'].forEach(t => board.addEventListener(t, stopAllow));
+  board.addEventListener('pointerout', e => { if (e.target.closest && e.target.closest('[data-act="allow"]')) stopAllow(); });
 
   async function openSession(id) {
     const s = sessions.find(x => x.id === id); if (!s) return;

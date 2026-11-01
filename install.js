@@ -19,7 +19,7 @@ fs.mkdirSync(DECK, { recursive: true });
 // 1. program files
 let copied = 0;
 for (const f of fs.readdirSync(SRC)) {
-  if (!/\.(js|ps1|vbs)$/.test(f) || f === 'install.js' || /^(patch|probe)/.test(f)) continue;
+  if (!/\.(js|ps1|vbs|sh|applescript)$/.test(f) || /^install/.test(f) || /^(patch|probe)/.test(f)) continue;
   fs.copyFileSync(path.join(SRC, f), path.join(DECK, f)); copied++;
 }
 fs.cpSync(path.join(SRC, 'public'), path.join(DECK, 'public'), { recursive: true });
@@ -81,11 +81,15 @@ if (process.platform === 'win32') {
   catch (_) { say('couldn\u2019t create the shortcuts; start LLM Deck with: wscript "' + path.join(DECK, 'start-deck.vbs') + '"'); }
 }
 
+// 4b. macOS: start at login, an LLM Deck app, and the app icons
+if (process.platform === 'darwin') require('./install-mac.js')({ HOME, DECK, say });
+
 // 5. start it, unless it's already running
 const sock = net.connect(cfg.port || 7777, '127.0.0.1');
 sock.on('connect', () => { sock.end(); say('LLM Deck is already running. Restart it (or sign out and in) to load the new files.'); done(); });
 sock.on('error', () => {
   if (process.platform === 'win32') { spawn('wscript.exe', [path.join(DECK, 'start-deck.vbs')], { detached: true, stdio: 'ignore' }).unref(); say('starting LLM Deck'); }
+  else if (process.platform === 'darwin') say('LLM Deck is starting');
   else say('start it with: node "' + path.join(DECK, 'server.js') + '", then open http://localhost:' + (cfg.port || 7777));
   done();
 });

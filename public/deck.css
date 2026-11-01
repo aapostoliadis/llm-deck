@@ -232,3 +232,7 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 }
 @media (max-width: 620px) { .board { grid-template-columns: 1fr; } }
 .rail-actions .ghost { white-space: nowrap; font-size: 13px; padding: 0 4px; min-width: 0; }
+/* hold-to-allow: the button fills while it is held */
+.pbtn.allow { position: relative; overflow: hidden; isolation: isolate; }
+.pbtn.allow::before { content: ''; position: absolute; inset: 0; z-index: -1; background: rgba(4, 20, 14, .3); transform: scaleX(0); transform-origin: left center; }
+.pbtn.allow.arming::before { transform: scaleX(1); transition: transform 1s linear; }

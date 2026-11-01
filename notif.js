@@ -12,7 +12,7 @@ let cache = { at: 0, list: [] };
 
 const dec = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&amp;/g, '&');
 
-function read() {
+function readWin() {
   if (!sqlite || process.platform !== 'win32' || !fs.existsSync(SRC)) return [];
   if (Date.now() - cache.at < 20000) return cache.list;
   cache.at = Date.now();
@@ -75,4 +75,7 @@ function apply(sessions, cfg, extras) {
   }
 }
 
-module.exports = { read, apply, lastError: () => cache.err || '' };
+const mac = process.platform === 'darwin' ? require('./notif-mac') : null;
+function read() { return mac ? mac.read() : readWin(); }
+
+module.exports = { read, apply, lastError: () => (mac ? mac.lastError() : (cache.err || '')) };

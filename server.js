@@ -8,19 +8,21 @@ const path = require('path');
 const http = require('http');
 const { exec, spawn, execSync } = require('child_process');
 const codex = require('./codex');
+const platform = require('./platform');
 const extras = require('./extras');
 const v3 = require('./v3');
 const notif = require('./notif');
 const suggester = require('./suggest');
 const backup = require('./backup');
 function openUrl(url, proc, pkg) {
+  if (process.platform !== 'win32') { platform.openUrl(url); setTimeout(() => platform.focus(url.startsWith('codex:') ? 'codex' : /claude/i.test(proc) ? 'claude' : 'chatgpt'), 1500); return; }
   spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', "Start-Process '" + url + "'"], { stdio: 'ignore', windowsHide: true }).unref();
   setTimeout(() => focusApp(proc, pkg), 1500);
 }
-const DESK = path.join(process.env.APPDATA || '', 'Claude', 'claude-code-sessions');
+const DESK = path.join(platform.claudeDataDir(), 'claude-code-sessions');
 let deskCache = { at: 0, map: new Map() };
 function desktopTitles() {
-  if (process.platform !== 'win32' || Date.now() - deskCache.at < 15000) return deskCache.map;
+  if (Date.now() - deskCache.at < 15000) return deskCache.map;
   const map = new Map();
   const walk = d => {
     let es = []; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch (_) { return; }
@@ -42,6 +44,7 @@ function desktopTitles() {
   return map;
 }
 function focusApp(proc, pkg) {
+  if (process.platform !== 'win32') return platform.focus(/claude/i.test(proc) ? 'claude' : 'chatgpt');
   spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', path.join(__dirname, 'focus-app.ps1'), '-Proc', proc, '-Package', pkg], { stdio: 'ignore', windowsHide: true }).unref();
 }
 
@@ -321,6 +324,11 @@ function chatSessions(codexTitles) {
 const VERF = path.join(DATA, 'versions.json');
 let appVersions = readJSON(VERF, {});
 function checkVersions() {
+  if (process.platform === 'darwin') return platform.macVersions(v => {
+    let changed = false;
+    for (const [k, ver] of Object.entries(v)) { const cur = appVersions[k]; if (!cur) { appVersions[k] = { version: ver, changedAt: 0 }; changed = true; } else if (cur.version !== ver) { appVersions[k] = { version: ver, previous: cur.version, changedAt: Date.now() }; changed = true; } }
+    if (changed) { try { fs.writeFileSync(VERF, JSON.stringify(appVersions, null, 2)); } catch (_) {} }
+  });
   if (process.platform !== 'win32') return;
   const p = spawn('powershell', ['-NoProfile', '-Command', "'Claude','OpenAI.ChatGPT-Desktop' | ForEach-Object { Get-AppxPackage -Name $_ } | ForEach-Object { $_.Name + '=' + $_.Version }"], { windowsHide: true });
   let o = ''; p.stdout.on('data', d => (o += d));
@@ -395,6 +403,7 @@ const osa = script => new Promise(res => { const p = spawn('osascript', ['-e', s
 async function openSession(id) {
   try { extras.releasePerms(id); } catch (_) {}
   if (String(id).startsWith('chat:')) {
+    if (process.platform !== 'win32') { platform.focus(String(id).split(':')[1] === 'claude' ? 'claude' : 'chatgpt'); return 'app'; }
     const parts = String(id).split(':'); const app = parts[1]; const title = parts.slice(2).join(':');
     if (!['claude', 'chatgpt'].includes(app)) throw new Error('bad app');
     spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', path.join(__dirname, 'focus-chat.ps1'), '-App', app, '-Title', title], { stdio: 'ignore', windowsHide: true }).unref();
@@ -418,6 +427,7 @@ async function openSession(id) {
   }
   if (active && t.program === 'vscode' && has('code')) { exec(`code ${q(cwd)}`); return 'vscode'; }
 
+  if (process.platform === 'darwin' && !(t.iterm || t.tty || t.tmuxPane || t.program)) { openUrl('claude://resume?session=' + id, '^claude$', 'Claude'); return 'claude-session'; }
   if (process.platform === 'darwin') {
     if (active && t.iterm) {
       const guid = t.iterm.split(':').pop();
@@ -492,7 +502,12 @@ function weekly() {
   return { from, rows: [...rows.values()].sort((a, b) => b.minutes - a.minutes || b.codex - a.codex), limits: Object.assign(extras.limitHistory(from), { weekNow: cache.usage && cache.usage.weekly ? cache.usage.weekly.pct : null }) };
 }
 function newSession(group) {
-  if (process.platform !== 'win32') throw new Error('New sessions open on Windows');
+  if (process.platform !== 'win32') {
+    const r = state().sessions.filter(s => s.app === 'claude' && s.group === group && s.cwd).sort((a, b) => b.lastTs - a.lastTs)[0];
+    if (r) platform.copy(r.cwd);
+    platform.openUrl('claude://code/new?source=desktop_action'); setTimeout(() => platform.focus('claude'), 1500);
+    return { ok: true, folder: r ? r.cwd : '' };
+  }
   const recent = state().sessions.filter(s => s.app === 'claude' && s.group === group && s.cwd).sort((a, b) => b.lastTs - a.lastTs)[0];
   const folder = recent ? recent.cwd : '';
   const cmd = (folder ? "Set-Clipboard -Value '" + folder.replace(/'/g, "''") + "'; " : '') + "Start-Process 'claude://code/new?source=desktop_action'";
@@ -501,6 +516,7 @@ function newSession(group) {
   return { ok: true, folder };
 }
 function selfTestReply() {
+  if (process.platform !== 'win32') return Promise.resolve({ ok: true, note: 'typing test runs on Windows only' });
   return new Promise(resolve => {
     let done = false; const finish = r => { if (!done) { done = true; resolve(r); } };
     const p = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', path.join(__dirname, 'reply.ps1'), '-App', 'chatgpt', '-Text', 'LLM Deck self-test', '-DryRun'], { windowsHide: true });
@@ -512,7 +528,16 @@ function selfTestReply() {
 
 // ---------- quick replies ----------
 function replyTo(id, text) {
-  if (process.platform !== 'win32') throw new Error('Quick replies work on Windows');
+  if (process.platform === 'darwin') {
+    if (!(cfg.quickReplies || []).includes(text)) throw new Error('Only the preset replies can be sent');
+    if (id.startsWith('chat:')) throw new Error('On macOS, quick replies work for Claude Code and Codex sessions');
+    if (codex.has(id)) { const tid = id.slice(6); if (!/^[\w-]+$/.test(tid)) throw new Error('bad id'); codex.markSeen(id); platform.macType('codex://threads/' + tid, 'Codex', text); return 'codex'; }
+    if (!/^[\w-]+$/.test(id)) throw new Error('bad id');
+    const mt = (live.get(id) || {}).term || {};
+    if (mt.iterm || mt.tty || mt.tmuxPane) throw new Error('Quick replies work for sessions in the Claude app');
+    platform.macType('claude://resume?session=' + id, 'Claude', text); return 'claude-code';
+  }
+  if (process.platform !== 'win32') throw new Error('Quick replies work on Windows and macOS');
   if (!(cfg.quickReplies || []).includes(text)) throw new Error('Only the preset replies can be sent');
   const ps = args => spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', path.join(__dirname, 'reply.ps1'), ...args], { stdio: 'ignore', windowsHide: true }).unref();
   const link = url => spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', "Start-Process '" + url + "'"], { stdio: 'ignore', windowsHide: true }).unref();
@@ -534,7 +559,7 @@ function replyTo(id, text) {
 
 // ---------- http ----------
 const body = req => new Promise(res => { let b = ''; req.on('data', d => b += d); req.on('end', () => { try { res(JSON.parse(b || '{}')); } catch (_) { res({}); } }); });
-const send = (res, code, obj, type = 'application/json') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' }); res.end(type === 'application/json' ? JSON.stringify(obj) : obj); };
+const send = (res, code, obj, type = 'application/json') => { if (res.headersSent) { try { res.end(); } catch (_) {} return; } res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' }); res.end(type === 'application/json' ? JSON.stringify(obj) : obj); };
 
 http.createServer(async (req, res) => {
   try {
@@ -587,7 +612,7 @@ http.createServer(async (req, res) => {
     if (req.method === 'GET' && req.url.startsWith('/icons/')) {
       const name = path.basename(req.url.split('?')[0]);
       if (!/^[\w-]+\.png$/.test(name)) return send(res, 404, { error: 'not found' });
-      try { res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=86400' }); return res.end(fs.readFileSync(path.join(DECK, 'public', 'icons', name))); }
+      try { const img = fs.readFileSync(path.join(DECK, 'public', 'icons', name)); res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=86400' }); return res.end(img); }
       catch (_) { return send(res, 404, { error: 'not found' }); }
     }
     if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/?'))) return send(res, 200, fs.readFileSync(path.join(DECK, 'public', 'index.html')), 'text/html; charset=utf-8');
