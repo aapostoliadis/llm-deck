@@ -231,3 +231,4 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
   .clock { font-size: 48px; }
 }
 @media (max-width: 620px) { .board { grid-template-columns: 1fr; } }
+.rail-actions .ghost { white-space: nowrap; font-size: 13px; padding: 0 4px; min-width: 0; }

@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 160" width="750" height="160">
+<style>
+  svg { --gear:#26303C; --acc:#2B3644; --gear-soft:#FFFFFF; --bell:#F5C042; --alert:#E5484D; --laptop:#B9C3CF; --working:#4F7BF2; --ready:#2AA87F; }
+  .body { fill: var(--body); }
+  .ink { fill: var(--gear); }
+  .acc { fill: var(--acc); }
+  .acc-line, .stroke { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .acc-line { stroke: var(--acc); }
+  .stroke { stroke: var(--gear); }
+  .lbl { font: 600 15px -apple-system, "Segoe UI", system-ui, sans-serif; fill: #5A6878; }
+  @media (prefers-color-scheme: dark) {
+    svg { --gear:#0B1220; --acc:#D3DCE8; --gear-soft:#2B3A52; }
+    .lbl { fill: #93A3B8; }
+  }
+</style>
+<g transform="translate(21,8) scale(1.5)" class="s-working" style="--body:#4F7BF2"><g class="who">
+    <ellipse class="body" cx="28" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="44" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="36" cy="45" rx="20.5" ry="18"/>
+    <circle cx="24" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+    <circle cx="48" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+        <circle class="ink" cx="29" cy="44" r="2.1"/><circle class="ink" cx="43" cy="44" r="2.1"/>
+        <path class="acc-line" d="M15.5 44 C15.5 17 56.5 17 56.5 44" stroke-width="3.4"/>
+        <rect class="acc" x="11" y="38" width="8" height="13" rx="4"/>
+        <rect class="acc" x="53" y="38" width="8" height="13" rx="4"/></g>
+      <rect x="20" y="49" width="32" height="16" rx="2.5" fill="var(--laptop)"/>
+      <circle cx="36" cy="57" r="2" fill="var(--gear-soft)" opacity=".8"/>
+      <rect class="acc" x="15" y="64" width="42" height="3.2" rx="1.6"/></g>
+  <text x="75" y="146" text-anchor="middle" class="lbl">Working</text><g transform="translate(171,8) scale(1.5)" class="s-waiting" style="--body:#EE9F25">
+    <ellipse class="body" cx="28" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="44" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="36" cy="45" rx="20.5" ry="18"/>
+    <circle cx="24" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+    <circle cx="48" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/><circle class="ink" cx="29" cy="42" r="2.9"/><circle class="ink" cx="43" cy="42" r="2.9"/>
+      <circle cx="30" cy="41" r=".9" fill="#fff"/><circle cx="44" cy="41" r=".9" fill="#fff"/>
+      <ellipse class="ink" cx="36" cy="52" rx="2.2" ry="2.6"/>
+      <g class="bell">
+        <circle cx="56" cy="5.5" r="1.8" fill="var(--bell)"/>
+        <path d="M48 20 C48 10 51 6.5 56 6.5 C61 6.5 64 10 64 20 L66.5 22.5 L45.5 22.5 Z" fill="var(--bell)"/>
+        <circle cx="56" cy="25" r="2.4" fill="var(--bell)"/>
+      </g>
+      <circle cx="66" cy="8" r="6.2" fill="var(--alert)"/>
+      <rect x="65" y="3.6" width="2" height="5.6" rx="1" fill="#fff"/><circle cx="66" cy="11.6" r="1.1" fill="#fff"/></g>
+  <text x="225" y="146" text-anchor="middle" class="lbl">Waiting for you</text><g transform="translate(321,8) scale(1.5)" class="s-ready" style="--body:#2AA87F">
+    <ellipse class="body" cx="28" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="44" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="36" cy="45" rx="20.5" ry="18"/>
+    <circle cx="24" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+    <circle cx="48" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+      <circle cx="29" cy="43" r="5.6" fill="#fff" opacity=".28"/><circle cx="43" cy="43" r="5.6" fill="#fff" opacity=".28"/>
+      <circle class="ink" cx="29" cy="43" r="2"/><circle class="ink" cx="43" cy="43" r="2"/>
+      <circle class="stroke" cx="29" cy="43" r="5.6" stroke-width="2"/><circle class="stroke" cx="43" cy="43" r="5.6" stroke-width="2"/>
+      <path class="stroke" d="M34.6 42.4 Q36 41.4 37.4 42.4" stroke-width="2"/>
+      <path class="stroke" d="M31 51 Q36 55.5 41 51" stroke-width="2.2"/>
+      <path d="M16.5 34 C16.5 17.5 55.5 17.5 55.5 34 Z" class="acc"/>
+      <path d="M50 32 L67 34.5 Q67.5 37.8 63 37.8 L50 36 Z" class="acc"/>
+      <circle cx="36" cy="20.5" r="2.2" fill="var(--ready)"/>
+      <path class="spark" d="M64 14 l1.4 3.2 3.2 1.4 -3.2 1.4 -1.4 3.2 -1.4 -3.2 -3.2 -1.4 3.2 -1.4 Z" fill="var(--bell)"/></g>
+  <text x="375" y="146" text-anchor="middle" class="lbl">New result</text><g transform="translate(471,8) scale(1.5)" class="s-idle" style="--body:#9C98BC">
+    <ellipse class="body" cx="28" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="44" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="36" cy="45" rx="20.5" ry="18"/>
+    <circle cx="24" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+    <circle cx="48" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+      <path class="stroke" d="M26 44 Q29 46.5 32 44" stroke-width="2.2"/>
+      <path class="stroke" d="M40 44 Q43 46.5 46 44" stroke-width="2.2"/>
+      <path class="stroke" d="M34 52 Q36 53 38 52" stroke-width="2"/>
+      <path d="M17 31 Q20 13 42 11.5 Q58 11 63 26 L59.5 28 Q56 20 50 21.5 L55.5 31 Z" fill="var(--working)" opacity=".85"/>
+      <rect x="15" y="29" width="42" height="6.5" rx="3.25" fill="#F4F6FA"/>
+      <circle cx="61.5" cy="28.5" r="4" fill="#F4F6FA"/>
+      <text class="z acc" x="60" y="12" font-size="9" font-weight="700">z</text>
+      <text class="z z2 acc" x="65" y="6" font-size="7" font-weight="700">z</text></g>
+  <text x="525" y="146" text-anchor="middle" class="lbl">Idle</text><g transform="translate(621,8) scale(1.5)" class="s-failed" style="--body:#D9434B">
+    <ellipse class="body" cx="28" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="44" cy="62" rx="5" ry="2.6"/>
+    <ellipse class="body" cx="36" cy="45" rx="20.5" ry="18"/>
+    <circle cx="24" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/>
+    <circle cx="48" cy="50" r="2.6" fill="#FF8FA3" opacity=".35"/><path class="stroke" d="M26.5 40.5 l5 5 M31.5 40.5 l-5 5" stroke-width="2.2"/><path class="stroke" d="M40.5 40.5 l5 5 M45.5 40.5 l-5 5" stroke-width="2.2"/><path class="stroke" d="M31 54 Q36 50.5 41 54" stroke-width="2.2"/><g transform="rotate(-18 44 26)"><rect x="34" y="22" width="20" height="8" rx="3" fill="#F4E3C8"/><rect x="41.5" y="22" width="5" height="8" fill="#E5C99B"/><circle cx="37" cy="26" r=".8" fill="#C9A878"/><circle cx="51" cy="26" r=".8" fill="#C9A878"/></g></g>
+  <text x="675" y="146" text-anchor="middle" class="lbl">Failed</text>
+</svg>
