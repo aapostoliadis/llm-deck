@@ -1,0 +1,12 @@
+# personal data and local state, never published
+config.json
+*.json.bak
+*.bak
+*.bak-*
+archive/
+backups/
+edge-profile/
+node_modules/
+# official app icons are copied from the user's own installed apps at install time
+public/icons/claude.png
+public/icons/chatgpt-*.png

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LLM Deck</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/llm-deck-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/llm-deck-192.png">
+<link rel="apple-touch-icon" href="/icons/llm-deck-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/deck.css">
+</head>
+<body>
+<aside class="rail">
+  <div>
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date"></div>
+  </div>
+  <div class="weather"><b id="temp">--°</b><span id="weather">outside</span></div>
+  <div>
+    <div class="meter">
+      <div class="meter-head"><span>Claude 5-hour</span><strong id="l5">--</strong></div>
+      <div class="bar"><i id="b5" style="width:0"></i></div>
+      <small id="r5"></small>
+    </div>
+    <div class="meter">
+      <div class="meter-head"><span>Claude weekly</span><strong id="lw">--</strong></div>
+      <div class="bar"><i id="bw" style="width:0"></i></div>
+      <small id="rw"></small>
+    </div>
+    <div id="extraLimits"></div>
+  </div>
+  <div class="spend">
+    <b id="spend">$0</b>
+    <small id="spendLabel">this month at API prices</small>
+  </div>
+  <p class="health" id="focusBar" role="button" hidden></p>
+  <p class="health" id="conn" hidden></p>
+  <p class="health" id="health" hidden></p>
+  <p class="demo-note" id="demoNote" hidden>Demo data. Run the local server to see your real sessions.</p>
+  <div class="rail-actions"><button class="ghost" id="weekBtn" type="button">This week</button><button class="ghost" id="digestBtn" type="button">Overnight</button><button class="ghost" id="settingsBtn" type="button">Settings</button></div>
+  <button class="theme" id="theme" type="button" aria-label="Switch day and night mode"></button>
+</aside>
+
+<main class="board" id="board">
+  <section class="col" data-group="pinned"><h2>Pinned <span class="count">0</span></h2><div class="list"></div></section>
+  <section class="col" data-group="waiting"><h2>Waiting for you <span class="count">0</span></h2><div class="list"></div></section>
+  <section class="col" data-group="ready"><h2>New result <span class="count">0</span></h2><div class="list"></div></section>
+  <section class="col" data-group="background"><h2>Background, last 24h <span class="count">0</span></h2><div class="list"></div></section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/deck.js"></script>
+</body>
+</html>

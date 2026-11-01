@@ -1,0 +1,92 @@
+#!/usr/bin/env node
+// LLM Deck installer. Safe to run again: your settings and data are kept, program files are updated,
+// any new settings are added with their defaults, and the Claude Code hooks are refreshed.
+const fs = require('fs');
+const os = require('os');
+const net = require('net');
+const path = require('path');
+const { execSync, spawn } = require('child_process');
+
+const HOME = os.homedir();
+const SRC = __dirname;
+const DECK = path.join(HOME, '.claude-deck');          // internal folder name kept for compatibility
+const SETTINGS = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude'), 'settings.json');
+const say = m => console.log('  ' + m);
+
+console.log('Installing LLM Deck into ' + DECK);
+fs.mkdirSync(DECK, { recursive: true });
+
+// 1. program files
+let copied = 0;
+for (const f of fs.readdirSync(SRC)) {
+  if (!/\.(js|ps1|vbs)$/.test(f) || f === 'install.js' || /^(patch|probe)/.test(f)) continue;
+  fs.copyFileSync(path.join(SRC, f), path.join(DECK, f)); copied++;
+}
+fs.cpSync(path.join(SRC, 'public'), path.join(DECK, 'public'), { recursive: true });
+say(copied + ' program files and the dashboard copied');
+
+// 2. settings: keep yours, add new ones with their defaults
+const DEFAULTS = require(path.join(SRC, 'defaults.js'));
+const cfgFile = path.join(DECK, 'config.json');
+let cfg = {}; try { cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); } catch (_) {}
+const added = Object.keys(DEFAULTS).filter(k => !(k in cfg));
+for (const k of added) cfg[k] = DEFAULTS[k];
+fs.writeFileSync(cfgFile, JSON.stringify(cfg, null, 2));
+say(added.length ? 'settings: added ' + added.join(', ') : 'settings: up to date');
+
+// 3. Claude Code hooks (a backup of your settings is saved first)
+let settings = {};
+if (fs.existsSync(SETTINGS)) { settings = JSON.parse(fs.readFileSync(SETTINGS, 'utf8')); fs.copyFileSync(SETTINGS, SETTINGS + '.before-llm-deck.bak'); }
+else fs.mkdirSync(path.dirname(SETTINGS), { recursive: true });
+settings.hooks = settings.hooks || {};
+const strip = list => (list || []).map(g => ({ ...g, hooks: (g.hooks || []).filter(h => !String(h.command || '').includes('claude-deck')) })).filter(g => g.hooks.length);
+const hookCmd = 'node "' + path.join(DECK, 'hook.js') + '"';
+for (const ev of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd']) {
+  const list = strip(settings.hooks[ev]);
+  const entry = { hooks: [{ type: 'command', command: hookCmd, timeout: 5 }] };
+  if (ev === 'PostToolUse') entry.matcher = '*';
+  list.push(entry); settings.hooks[ev] = list;
+}
+const perm = strip(settings.hooks.PermissionRequest);
+perm.push({ matcher: '*', hooks: [{ type: 'command', command: 'node "' + path.join(DECK, 'perm-hook.js') + '"', timeout: (cfg.permWaitSeconds || 600) + 30 }] });
+settings.hooks.PermissionRequest = perm;
+if (!settings.cleanupPeriodDays || settings.cleanupPeriodDays < 90) { settings.cleanupPeriodDays = 90; say('Claude Code now keeps session history for 90 days'); }
+fs.writeFileSync(SETTINGS, JSON.stringify(settings, null, 2));
+say('Claude Code hooks registered in ' + SETTINGS);
+
+// 4. Windows: desktop and start-at-login shortcuts with the LLM Deck icon
+if (process.platform === 'win32') {
+  const ps = [
+    "$icons = '" + path.join(DECK, 'public', 'icons') + "'",
+    "$c = Get-AppxPackage -Name Claude | Select-Object -First 1",
+    "if ($c) { $f = Join-Path $c.InstallLocation 'Assets\\Square44x44Logo.targetsize-96.png'; if (Test-Path $f) { Copy-Item $f (Join-Path $icons 'claude.png') -Force } }",
+    "$g = Get-AppxPackage -Name OpenAI.ChatGPT-Desktop | Select-Object -First 1",
+    "if ($g) { foreach ($p in @(@('AppList.targetsize-96_altform-unplated.png', 'chatgpt-dark.png'), @('AppList.targetsize-96_altform-lightunplated.png', 'chatgpt-light.png'))) { $f = Join-Path $g.InstallLocation ('assets\\' + $p[0]); if (Test-Path $f) { Copy-Item $f (Join-Path $icons $p[1]) -Force } } }",
+    "$ws = New-Object -ComObject WScript.Shell",
+    "foreach ($folder in [Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Desktop')) {",
+    "  $old = Join-Path $folder 'Claude Deck.lnk'; $new = Join-Path $folder 'LLM Deck.lnk'",
+    "  if ((Test-Path $old) -and -not (Test-Path $new)) { Rename-Item $old 'LLM Deck.lnk' }",
+    "  $l = $ws.CreateShortcut($new)",
+    "  $l.TargetPath = \"$env:WINDIR\\System32\\wscript.exe\"",
+    "  $l.Arguments = '\"" + path.join(DECK, 'start-deck.vbs') + "\"'",
+    "  $l.WorkingDirectory = '" + DECK + "'",
+    "  $l.IconLocation = '" + path.join(DECK, 'public', 'icons', 'llm-deck.ico') + ",0'",
+    "  $l.Description = 'LLM Deck dashboard'",
+    "  $l.Save()",
+    "}"
+  ].join('\r\n');
+  const tmp = path.join(os.tmpdir(), 'llm-deck-shortcuts.ps1');
+  fs.writeFileSync(tmp, ps);
+  try { execSync('powershell -NoProfile -ExecutionPolicy Bypass -File "' + tmp + '"', { stdio: 'ignore' }); say('shortcuts: desktop and start at login'); }
+  catch (_) { say('couldn\u2019t create the shortcuts; start LLM Deck with: wscript "' + path.join(DECK, 'start-deck.vbs') + '"'); }
+}
+
+// 5. start it, unless it's already running
+const sock = net.connect(cfg.port || 7777, '127.0.0.1');
+sock.on('connect', () => { sock.end(); say('LLM Deck is already running. Restart it (or sign out and in) to load the new files.'); done(); });
+sock.on('error', () => {
+  if (process.platform === 'win32') { spawn('wscript.exe', [path.join(DECK, 'start-deck.vbs')], { detached: true, stdio: 'ignore' }).unref(); say('starting LLM Deck'); }
+  else say('start it with: node "' + path.join(DECK, 'server.js') + '", then open http://localhost:' + (cfg.port || 7777));
+  done();
+});
+function done() { console.log('Done. Check everything with: node "' + path.join(DECK, 'selfcheck.js') + '"'); }
