@@ -77,7 +77,7 @@ Press **F11** to switch the deck between full screen and a window.
 
 ## Requirements
 
-- Windows 10 or 11, or macOS 13 or newer (macOS support is new, see [Windows and macOS](#windows-and-macos)). The core dashboard also runs on Linux.
+- Windows 10 or 11, or macOS 13 or newer (see [Windows and macOS](#windows-and-macos)). The core dashboard also runs on Linux.
 - [Node.js](https://nodejs.org) 22.5 or newer.
 - [Claude Code](https://docs.claude.com/en/docs/claude-code/overview).
 - Optional: the Claude, ChatGPT and Codex desktop apps, and Microsoft Edge or Google Chrome for the full-screen window.
@@ -96,6 +96,23 @@ On Windows it creates **LLM Deck** shortcuts on the desktop and in Startup; on m
 **LLM Deck** app in `~/Applications`. The deck opens full screen on the smaller of your displays.
 
 To update, pull the latest version and run `node install.js` again. Your settings are kept.
+
+### On macOS
+
+Two features need a permission that only you can grant. Open **System Settings › Privacy & Security** and add
+the Node.js program (run `which node` in Terminal to find it) to:
+
+- **Full Disk Access**, so the deck can read Notification Center and show Claude chats that finish in the background.
+- **Accessibility**, so the deck can type quick replies into Claude Code and Codex.
+
+Then restart the deck so it picks up the new permissions:
+
+```
+launchctl kickstart -k gui/$(id -u)/com.llmdeck.server
+```
+
+Everything else works without them. To reopen the dashboard window at any time, open **LLM Deck** from
+`~/Applications` or Spotlight.
 
 Check that everything works:
 
@@ -120,8 +137,9 @@ node ~/.claude-deck/selfcheck.js                   # macOS
 ¹ Give **node** Full Disk Access in System Settings › Privacy & Security, so the deck can read Notification Center.  
 ² Give **node** Accessibility access in the same place, so the deck can type the reply.
 
-macOS support is new and hasn't had much use on real Macs yet. If something doesn't work, please open an issue with
-the output of the self-check.
+Both platforms have been tested end to end, including on macOS: install and start at login, cards and tap to open,
+Claude chat notifications and quick replies. If something doesn't work for you, please open an issue with the output
+of the self-check.
 
 ## Settings
 
