@@ -53,10 +53,10 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 👀 **Double-tap** a Claude Code or Codex card to read its last reply without switching windows.
 - ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app.
 - 💬 **Quick replies** such as "Yes, continue", typed into the right conversation for you.
-- 📈 **Usage limits** for Claude and Codex, with a forecast of when you'd hit them at the current pace.
+- 📈 **Usage limits** for Claude and Codex, with a forecast under each bar of when you'd hit it at the current pace.
 - 🔔 **A soft chime** when something needs you, a reminder if it waits too long, and quiet hours.
 - 🌙 **Night mode and dimming** on a schedule, with a gentle shift to protect the screen.
-- 📅 **This week** and **Overnight** summaries per project.
+- 📅 **This week** shows time, sessions and finished turns per project, and warns when a weekly limit won't last until it resets, naming the day and time it would run out. **Overnight** lists what finished, ran or got stuck while you were away.
 - 🧭 **Project groups**, with suggestions based on your recent work.
 - 📱 **Phone access** on the same Wi-Fi through a private link.
 - 💾 **Backups**, a built-in **self-test**, and a watchdog that restarts the deck if it stops.
