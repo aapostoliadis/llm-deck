@@ -165,7 +165,9 @@ yourself, since anyone with it on your network can approve requests.
 
 Everything runs on your computer. The deck reads Claude Code's session files and hook events, Codex's
 local thread records, the sidebars of the Claude and ChatGPT desktop apps through Windows UI Automation,
-and the notifications those apps send to Windows. Nothing is sent anywhere; the only outside requests
+and the notifications those apps send to Windows or macOS. Your official usage limits come from the data Claude Code
+gives status line scripts, recorded by a small LLM Deck status line that prints nothing (or shows the status
+line you had before), with `/usage` as a backup. Nothing is sent anywhere; the only outside requests
 are the weather ([Open-Meteo](https://open-meteo.com)) and the dashboard's fonts. Backups never include
 the private phone link.
 
@@ -179,6 +181,7 @@ the private phone link.
 | Taps on the touch screen land on the other monitor | Search Start for **Calibrate the screen for pen or touch input**, choose **Setup** and tap the touch screen. |
 | Chat cards stop updating after an app update | The left panel says so. Please open an issue with the app's version. |
 | ChatGPT cards look out of date | The deck can only read ChatGPT while its window is open; minimised is fine. |
+| A limit bar is grey and says "last reading" | The deck shows the newest official reading it has and says how old it is. Use a Claude Code session for a moment and it refreshes. |
 | Something else looks wrong | Run the self-check and **Settings › Run self-test**, then open an issue with the results. |
 
 ## Automated checks
@@ -210,7 +213,7 @@ your own computer, and for how to report a problem or propose a change, see [CON
 ## Uninstall
 
 Delete the LLM Deck shortcuts (on macOS: `~/Applications/LLM Deck.app` and the two `com.llmdeck` files in
-`~/Library/LaunchAgents`), remove the hook entries that mention `claude-deck` from your Claude Code
+`~/Library/LaunchAgents`), remove the hook entries and the status line that mention `claude-deck` from your Claude Code
 `settings.json` (or restore the `.before-llm-deck.bak` copy next to it), and delete the
 `%USERPROFILE%\.claude-deck` folder.
 

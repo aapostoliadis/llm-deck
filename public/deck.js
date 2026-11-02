@@ -674,15 +674,26 @@
 
   function renderUsage(u) {
     if (!u) return;
-    const meter = (k, pct, reset, fallback) => {
+    const readAt = t => { const d = new Date(t), hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === new Date().toDateString() ? hm : d.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + hm; };
+    const meter = (k, pct, reset, fallback, info) => {
+      info = info || {};
+      const r = $('r' + k), l = $('l' + k), b0 = $('b' + k);
+      if (pct == null) {
+        l.textContent = '\u2013'; l.classList.add('stale'); b0.style.width = '0%'; b0.className = '';
+        r.textContent = info.expired ? 'Window reset since the last reading (' + readAt(info.asOf) + ')' : 'No reading yet';
+        r.classList.remove('warn'); r.classList.add('stale'); return;
+      }
+      const stale = !!(info.asOf && Date.now() - info.asOf > 30 * 60e3);
+      l.classList.toggle('stale', stale); r.classList.toggle('stale', stale);
       $('l' + k).textContent = `${Math.round(pct)}%`;
       const b = $('b' + k); b.style.width = `${Math.max(2, pct)}%`;
       b.className = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
       $('r' + k).textContent = forecastText(pct, reset, k === '5' ? 5 : 168, fallback);
       $('r' + k).classList.toggle('warn', /^(At this pace|Full)/.test($('r' + k).textContent));
+      if (stale) { r.textContent += ' (last reading ' + readAt(info.asOf) + ')'; r.classList.remove('warn'); }
     };
-    meter('5', u.fiveHour.pct, u.fiveHour.resetsAt, 'No active window');
-    meter('w', u.weekly.pct, u.weekly.resetsAt, 'Rolling 7 days');
+    meter('5', u.fiveHour.pct, u.fiveHour.resetsAt, 'No active window', u.fiveHour);
+    meter('w', u.weekly.pct, u.weekly.resetsAt, 'Rolling 7 days', u.weekly);
     $('extraLimits').innerHTML = (u.extra || []).map(x => {
       const pct = Math.round(x.pct), cls = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
       return `<div class="meter"><div class="meter-head"><span>${esc(x.label)}</span><strong>${pct}%</strong></div><div class="bar"><i class="${cls}" style="width:${Math.max(2, pct)}%"></i></div><small class="${/^(At this pace|Full)/.test(forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')) ? 'warn' : ''}">${forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')}</small></div>`;

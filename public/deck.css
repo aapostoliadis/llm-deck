@@ -245,3 +245,6 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 .card.s-ready .ask { border-left-color: var(--ready); }
 /* limit lines turn amber when a limit is on track to run out */
 .meter small.warn { color: color-mix(in srgb, var(--waiting) 75%, var(--ink)); font-weight: 600; }
+/* an old limit reading is shown, but greyed out */
+.meter .stale { color: var(--ink-2); font-weight: 500; }
+.meter strong.stale { opacity: .7; }

@@ -52,6 +52,12 @@ const perm = strip(settings.hooks.PermissionRequest);
 perm.push({ matcher: '*', hooks: [{ type: 'command', command: 'node "' + path.join(DECK, 'perm-hook.js') + '"', timeout: (cfg.permWaitSeconds || 600) + 30 }] });
 settings.hooks.PermissionRequest = perm;
 if (!settings.cleanupPeriodDays || settings.cleanupPeriodDays < 90) { settings.cleanupPeriodDays = 90; say('Claude Code now keeps session history for 90 days'); }
+// status line: records Claude's official usage limits for the deck, and keeps showing any status line you had
+if (!String((settings.statusLine || {}).command || '').includes('claude-deck')) {
+  if (settings.statusLine && settings.statusLine.command) fs.writeFileSync(path.join(DECK, 'statusline-original.json'), JSON.stringify(settings.statusLine));
+  settings.statusLine = { type: 'command', command: 'node "' + path.join(DECK, 'statusline.js') + '"', padding: 0 };
+  say('status line: records your official usage limits for the deck');
+}
 fs.writeFileSync(SETTINGS, JSON.stringify(settings, null, 2));
 say('Claude Code hooks registered in ' + SETTINGS);
 

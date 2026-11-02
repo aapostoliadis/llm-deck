@@ -28,7 +28,7 @@ const LIMF = path.join(DATA, 'limits.json');
 function loadOfficial() {
   const o = rj(LIMF, null); if (!o) return null;
   const now = Date.now();
-  for (const k of ['s', 'w']) if (o[k] && o[k].resetsAt && o[k].resetsAt < now) { o[k].pct = 0; o[k].resetsAt = null; }
+  for (const k of ['s', 'w']) if (o[k] && o[k].resetsAt && o[k].resetsAt < now) { /* kept as last read; the server marks it expired */ }
   return o;
 }
 function saveOfficial(o) { wj(LIMF, o); }

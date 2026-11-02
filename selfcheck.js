@@ -28,7 +28,7 @@ const get = p => new Promise(res => {
 (async () => {
   section('Files');
   const runtime = ['server.js', 'hook.js', 'perm-hook.js', 'codex.js', 'extras.js', 'v3.js', 'notif.js', 'suggest.js', 'backup.js', 'defaults.js',
-    'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
+    'statusline.js', 'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
     'public/index.html', 'public/deck.css', 'public/deck.js', 'public/icons/llm-deck.ico', 'public/icons/llm-deck-32.png'];
   const missing = runtime.filter(f => !fs.existsSync(path.join(DECK, f)));
   ok('all program files present', !missing.length, missing.join(', '));
@@ -62,7 +62,7 @@ const get = p => new Promise(res => {
   if (st.code === 200) {
     const s = st.json || {};
     ok('sessions and limits present', Array.isArray(s.sessions) && !!s.usage, (s.sessions || []).length + ' cards');
-    maybe('limits are official, not estimates', s.usage && s.usage.fiveHour && s.usage.fiveHour.source === 'claude');
+    maybe('limits are official and recent', s.usage && s.usage.fiveHour && s.usage.fiveHour.source === 'claude' && Date.now() - (s.usage.fiveHour.asOf || 0) < 60 * 60e3, s.usage && s.usage.fiveHour && s.usage.fiveHour.asOf ? 'last reading ' + Math.round((Date.now() - s.usage.fiveHour.asOf) / 60e3) + ' min ago' : 'no official reading');
     for (const p of ['/deck.css', '/deck.js', '/api/config', '/api/summary', '/api/suggest-groups', '/api/backup']) { const r = await get(p); ok('GET ' + p, r.code === 200); }
     const b = await get('/api/backup');
     ok('backup excludes the private phone link', b.json && b.json.kind === 'backup' && !('remoteToken' in (b.json.config || {})));
@@ -98,6 +98,7 @@ const get = p => new Promise(res => {
   const set = rj(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude'), 'settings.json')) || {};
   const has = ev => ((set.hooks || {})[ev] || []).some(g => (g.hooks || []).some(h => String(h.command || '').includes('claude-deck')));
   for (const ev of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd', 'PermissionRequest']) ok('hook ' + ev, has(ev));
+  ok('status line records official limits', String((set.statusLine || {}).command || '').includes('claude-deck'));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

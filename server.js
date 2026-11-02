@@ -257,12 +257,15 @@ function usage(files) {
   const weekFrom = wr || now - 7 * 24 * H;
   const weekCost = all.filter(e => e.ts >= weekFrom).reduce((s, e) => s + e.cost, 0);
 
+  // the newest official reading wins: Claude Code's status line feed or the /usage check
+  const slr = readJSON(path.join(DATA, 'ratelimits.json'), null);
+  if (slr && slr.at && (slr.s || slr.w) && (!official || slr.at > official.at)) official = { at: slr.at, s: slr.s, w: slr.w, via: 'statusline' };
   const fresh = official && Date.now() - official.at < 24 * 3600e3;
   if (fresh && official.s) { official.s.cost = blockCost; }
   if (fresh && official.w) { official.w.cost = weekCost; }
   if (fresh && (official.s || official.w)) return {
-    fiveHour: official.s ? { pct: (official.s.resetsAt && official.s.resetsAt < Date.now()) ? 0 : official.s.pct, resetsAt: official.s.resetsAt, cost: blockCost, source: 'claude' } : { pct: Math.min(100, blockCost / (cfg.fiveHourBudgetUSD || 250) * 100), resetsAt: blockActive ? blockStart + 5 * H : null, cost: blockCost },
-    weekly: official.w ? { pct: official.w.pct, resetsAt: official.w.resetsAt, cost: weekCost, source: 'claude' } : { pct: Math.min(100, weekCost / (cfg.weeklyBudgetUSD || 1500) * 100), resetsAt: wr ? wr + 7 * 24 * H : null, cost: weekCost },
+    fiveHour: official.s ? { pct: (official.s.resetsAt && official.s.resetsAt < Date.now()) ? null : official.s.pct, expired: !!(official.s.resetsAt && official.s.resetsAt < Date.now()), asOf: official.at, resetsAt: official.s.resetsAt, cost: blockCost, source: 'claude' } : { pct: Math.min(100, blockCost / (cfg.fiveHourBudgetUSD || 250) * 100), resetsAt: blockActive ? blockStart + 5 * H : null, cost: blockCost },
+    weekly: official.w ? { pct: (official.w.resetsAt && official.w.resetsAt < Date.now()) ? null : official.w.pct, expired: !!(official.w.resetsAt && official.w.resetsAt < Date.now()), asOf: official.at, resetsAt: official.w.resetsAt, cost: weekCost, source: 'claude' } : { pct: Math.min(100, weekCost / (cfg.weeklyBudgetUSD || 1500) * 100), resetsAt: wr ? wr + 7 * 24 * H : null, cost: weekCost },
     month: { cost: month, label: monthStart.toLocaleString('en', { month: 'long' }) }
   };
   return {
