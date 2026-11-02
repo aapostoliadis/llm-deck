@@ -38,7 +38,7 @@ function parse(file, st) {
   const subagent = /"subagent":\s*[\{"]/.test(head.slice(0, 20000));
   let firstPrompt = '';
   const tail = readSlice(file, 512 * 1024, true).split('\n').slice(1);
-  let start = 0, complete = 0, abort = 0, approval = 0, last = 0, rl = null, rlTs = 0, err = 0, errMsg = '', abortReason = '';
+  let start = 0, complete = 0, abort = 0, approval = 0, last = 0, rl = null, rlTs = 0, err = 0, errMsg = '', abortReason = '', approvalText = '', lastMsg = '';
   for (const l of tail) {
     if (!l) continue;
     let j; try { j = JSON.parse(l); } catch (_) { continue; }
@@ -48,13 +48,17 @@ function parse(file, st) {
     else if (t === 'task_complete') complete = ts;
     else if (t === 'turn_aborted') { abort = ts; abortReason = String((j.payload && j.payload.reason) || ''); }
     else if (t === 'error' || t === 'stream_error') { err = ts; errMsg = String((j.payload && j.payload.message) || 'Error').replace(/\s+/g, ' ').slice(0, 90); }
-    else if (t && /approval_request|request_user_input|elicitation/.test(t)) approval = ts;
+    else if (t && /approval_request|request_user_input|elicitation/.test(t)) {
+      approval = ts; const pl = j.payload || {};
+      approvalText = String(pl.reason || pl.question || (Array.isArray(pl.command) ? pl.command.join(' ') : pl.command || '')).replace(/\s+/g, ' ').slice(0, 160);
+    }
+    if (t === 'agent_message' && j.payload && j.payload.message) lastMsg = String(j.payload.message);
     if (t === 'token_count' && j.payload.rate_limits) { rl = j.payload.rate_limits; rlTs = ts; }
     if (!firstPrompt && j.type === 'response_item' && j.payload.type === 'message' && j.payload.role === 'user') {
       const c = (j.payload.content || []).find(x => x.text); if (c && !c.text.startsWith('<')) firstPrompt = c.text;
     }
   }
-  return { id, cwd, subagent, firstPrompt, start, complete, abort, approval, err, errMsg, abortReason, last: last || st.mtimeMs, rl, rlTs, mtime: st.mtimeMs, size: st.size };
+  return { id, cwd, subagent, firstPrompt, start, complete, abort, approval, approvalText, lastMsg, err, errMsg, abortReason, last: last || st.mtimeMs, rl, rlTs, mtime: st.mtimeMs, size: st.size };
 }
 
 function files(days) {
@@ -67,6 +71,15 @@ function files(days) {
     for (const f of list) if (f.endsWith('.jsonl')) out.push(path.join(dir, f));
   }
   return out;
+}
+
+// The last question in a message, if it ends with one.
+function questionOf(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!t.includes('?')) return '';
+  const parts = t.split(/(?<=[.!?])\s+/);
+  for (let i = parts.length - 1; i >= 0; i--) if (parts[i].includes('?')) return parts[i].slice(0, 160);
+  return '';
 }
 
 function sessions(cfg) {
@@ -100,7 +113,7 @@ function sessions(cfg) {
       id: 'codex:' + p.id, app: 'codex', cwd: p.cwd,
       project: p.cwd ? path.basename(p.cwd) : 'Codex',
       title: names.get(p.id) || p.firstPrompt.replace(/\s+/g, ' ').slice(0, 140) || 'Codex thread',
-      state, since, detail, lastTs: p.last, ended: false, pinned: false
+      state, since, detail, ask: state === 'waiting' ? p.approvalText : state === 'ready' ? questionOf(p.lastMsg) : '', lastTs: p.last, ended: false, pinned: false
     };
     known.set(s.id, s); out.push(s);
   }

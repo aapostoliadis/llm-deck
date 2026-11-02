@@ -389,6 +389,7 @@ function state() {
     const f = byId.get(s.id);
     if (f && f.meta.lastErr) { s.state = 'failed'; s.detail = f.meta.lastErr; s.since = f.meta.lastErrTs || s.lastTs; }
   }
+  for (const s of sessions) if (s.app === 'claude' && (s.state === 'waiting' || s.state === 'ready')) { try { s.ask = v3.askFor(s.id); } catch (_) {} }
   try { notif.apply(sessions, cfg, extras); } catch (_) {}
   extras.decorate(sessions, cfg);
   extras.dropHidden(sessions);

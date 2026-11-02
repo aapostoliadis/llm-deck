@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How LLM Deck works
+    url: https://github.com/aapostoliadis/llm-deck#readme
+    about: Setup, gestures, macOS permissions and troubleshooting

@@ -48,6 +48,7 @@ function readWin() {
 
 // Turns recent notifications into card states. Runs before dismissals are applied.
 function apply(sessions, cfg, extras) {
+  if (cfg.notifications === false) return;
   const list = read(); if (!list.length) return;
   const latest = new Map();
   for (const n of list) { const k = n.app + '|' + n.title; const p = latest.get(k); if (!p || n.at > p.at) latest.set(k, n); }

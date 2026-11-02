@@ -127,6 +127,41 @@ function phoneUrl(cfg, cfgFile, port) {
   return ip ? 'http://' + ip + ':' + port + '/?k=' + token(cfg, cfgFile) : null;
 }
 
+// The last question in a message, if it ends with one.
+function questionOf(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!t.includes('?')) return '';
+  const parts = t.split(/(?<=[.!?])\s+/);
+  for (let i = parts.length - 1; i >= 0; i--) if (parts[i].includes('?')) return parts[i].slice(0, 160);
+  return '';
+}
+// What a waiting or finished Claude Code session is asking, from its own transcript.
+const askCache = new Map();
+function askFor(id) {
+  if (!/^[\w-]+$/.test(String(id))) return '';
+  let c = askCache.get(id);
+  if (!c || !c.file || !fs.existsSync(c.file)) c = { file: claudeFile(id) };
+  if (!c.file) return '';
+  let st; try { st = fs.statSync(c.file); } catch (_) { return ''; }
+  if (c.mtime === st.mtimeMs) return c.ask;
+  c.mtime = st.mtimeMs; c.ask = '';
+  try {
+    const lines = tailLines(c.file, 300 * 1024);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      let j; try { j = JSON.parse(lines[i]); } catch (_) { continue; }
+      const content = j.message && j.message.content;
+      if (j.type === 'user' && !j.isMeta && (typeof content === 'string' || (Array.isArray(content) && content.some(x => x.type === 'text')))) break; // already answered
+      if (j.type !== 'assistant' || !Array.isArray(content)) continue;
+      const tool = content.find(x => x.type === 'tool_use' && x.name === 'AskUserQuestion');
+      if (tool) { const inp = tool.input || {}; c.ask = String((inp.questions && inp.questions[0] && inp.questions[0].question) || inp.question || '').replace(/\s+/g, ' ').slice(0, 160); break; }
+      const text = content.filter(x => x.type === 'text').map(x => x.text).join(' ');
+      if (text.trim()) { c.ask = questionOf(text); break; }
+    }
+  } catch (_) {}
+  askCache.set(id, c);
+  return c.ask;
+}
+
 function version() { let v = 0; for (const f of ['index.html', 'deck.css', 'deck.js']) { try { v = Math.max(v, fs.statSync(path.join(DECK, 'public', f)).mtimeMs); } catch (_) {} } return v; }
 
-module.exports = { publicConfig, saveConfig, peek, isLocal, authorize, phoneUrl, version };
+module.exports = { askFor, questionOf, publicConfig, saveConfig, peek, isLocal, authorize, phoneUrl, version };

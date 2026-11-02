@@ -1,0 +1,42 @@
+name: Bug report
+description: Something on the deck doesn't work as described
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. Please don't paste your config.json, as it holds your private phone link.
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options: [Windows 11, Windows 10, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: The output of `node --version`
+      placeholder: v24.18.0
+    validations:
+      required: true
+  - type: input
+    id: apps
+    attributes:
+      label: App versions
+      description: The Claude, ChatGPT or Codex app versions, if the problem involves one of them
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: selfcheck
+    attributes:
+      label: Self-check output
+      description: Run `node "%USERPROFILE%\.claude-deck\selfcheck.js"` on Windows or `node ~/.claude-deck/selfcheck.js` on macOS, and paste the result
+      render: text
+    validations:
+      required: true

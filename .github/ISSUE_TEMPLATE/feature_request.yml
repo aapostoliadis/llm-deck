@@ -1,0 +1,23 @@
+name: Feature idea
+description: Suggest something the deck could do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What gets in your way today
+      description: The situation, in a sentence or two
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      multiple: true
+      options: [Windows, macOS, Linux]

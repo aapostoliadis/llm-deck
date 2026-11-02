@@ -112,7 +112,7 @@
     if (s.state === 'working') return `Working for ${ago(d)}`;
     if (s.state === 'waiting') return `${s.detail || 'Needs your decision'}, ${ago(d)}`;
     if (s.state === 'ready') return `Ready ${ago(d) === 'just now' ? 'just now' : ago(d) + ' ago'}${s.detail ? ', ' + s.detail.toLowerCase() : ''}`;
-    return s.ended ? `Closed ${ago(now - s.lastTs)} ago` : `Idle for ${ago(now - s.lastTs)}`;
+    { const a = ago(now - s.lastTs); return s.ended ? (a === 'just now' ? 'Closed just now' : `Closed ${a} ago`) : (a === 'just now' ? 'Idle just now' : `Idle for ${a}`); }
   };
   const label = { working: 'working', waiting: 'waiting for you', ready: 'result ready', idle: 'idle' };
 
@@ -661,6 +661,7 @@
             <span class="title">${esc(s.title)}</span>
             <span class="proj">${tagFor(s.app)}${esc(s.project)}</span>
             <span class="status">${esc(statusText(s, now))}</span>
+            ${s.ask && !s.perm ? '<span class="ask">' + esc(s.ask) + '</span>' : ''}
             ${s.perm ? permBlock(s) : ''}
             ${replyChips(s)}
           </span>
@@ -678,13 +679,24 @@
       const b = $('b' + k); b.style.width = `${Math.max(2, pct)}%`;
       b.className = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
       $('r' + k).textContent = forecastText(pct, reset, k === '5' ? 5 : 168, fallback);
+      $('r' + k).classList.toggle('warn', /^(At this pace|Full)/.test($('r' + k).textContent));
     };
     meter('5', u.fiveHour.pct, u.fiveHour.resetsAt, 'No active window');
     meter('w', u.weekly.pct, u.weekly.resetsAt, 'Rolling 7 days');
     $('extraLimits').innerHTML = (u.extra || []).map(x => {
       const pct = Math.round(x.pct), cls = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
-      return `<div class="meter"><div class="meter-head"><span>${esc(x.label)}</span><strong>${pct}%</strong></div><div class="bar"><i class="${cls}" style="width:${Math.max(2, pct)}%"></i></div><small>${forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')}</small></div>`;
+      return `<div class="meter"><div class="meter-head"><span>${esc(x.label)}</span><strong>${pct}%</strong></div><div class="bar"><i class="${cls}" style="width:${Math.max(2, pct)}%"></i></div><small class="${/^(At this pace|Full)/.test(forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')) ? 'warn' : ''}">${forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')}</small></div>`;
     }).join('');
+    try { // one chime the first time a weekly limit is on track to run out
+      const outs = [weeklyOutlook('Claude', u.weekly && u.weekly.pct, u.weekly && u.weekly.resetsAt)]
+        .concat((u.extra || []).filter(x => /weekly/i.test(x.label)).map(x => weeklyOutlook(x.label.replace(/\s*weekly/i, ''), x.pct, x.resetsAt)));
+      const key = outs.filter(o => o && o.warn).map(o => ((o.text.match(/your (\S+) weekly/) || [])[1] || '') + ':' + ((o.text.match(/runs out on (\w+)/) || [])[1] || 'used up')).join('|');
+      if (key && store.get('deck-limit-alert') !== key) {
+        store.set('deck-limit-alert', key);
+        document.body.classList.remove('alerting'); void document.body.offsetWidth; document.body.classList.add('alerting');
+        if (DECK.sound !== false && !inQuiet(DECK.quietHours)) chime();
+      }
+    } catch (_) {}
     $('spend').textContent = '$' + Math.round(u.month.cost).toLocaleString('en-US');
     $('spendLabel').textContent = `${u.month.label}, Claude Code at API prices`;
   }
@@ -806,7 +818,7 @@
       mk('a1', 'acme-api', 'Migrate the orders service to the new schema', 'working', 18, { pinned: true }),
       mk('a2', 'research-notes', 'Cluster interview snippets by theme', 'waiting', 3, { pinned: true, detail: 'Wants to run npm install' }),
       mk('a3', 'story-engine', 'Refactor the story graph renderer', 'ready', 6, { pinned: true, detail: 'Finished after 41m' }),
-      mk('b1', 'game-dialogue', 'Write branching dialogue for episode 4', 'waiting', 11, { detail: 'Asks which ending to keep' }),
+      mk('b1', 'game-dialogue', 'Write branching dialogue for episode 4', 'waiting', 11, { detail: 'Asks which ending to keep', ask: 'Should I keep the hopeful ending or the open one?' }),
       mk('b2', 'agent-router', 'Draft the orchestrator routing rules', 'waiting', 1, { detail: 'Wants to edit routes.ts' }),
       mk('c1', 'shop-site', 'Rebuild the product page with the new photos', 'ready', 2, { detail: 'Finished after 27m' }),
       mk('c2', 'course-builder', 'Generate the homework index for module 6', 'ready', 34, { detail: 'Finished after 1h 12m' }),

@@ -239,3 +239,9 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 /* weekly outlook in the This week card */
 .outlook { margin: 6px 0 14px; padding: 12px 14px; border-radius: 12px; font-size: 15px; line-height: 1.45; background: var(--surface-2); border: 1px solid var(--line); }
 .outlook.warn { background: color-mix(in srgb, var(--waiting) 16%, var(--surface)); border-color: color-mix(in srgb, var(--waiting) 55%, var(--line)); color: var(--ink); font-weight: 600; }
+/* why a session is waiting, quoted on its tile */
+.card .ask { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 7px; padding: 6px 10px; border-left: 3px solid var(--waiting); border-radius: 6px; background: var(--surface-2); color: var(--ink); font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.card .ask::before { content: "\201C"; } .card .ask::after { content: "\201D"; }
+.card.s-ready .ask { border-left-color: var(--ready); }
+/* limit lines turn amber when a limit is on track to run out */
+.meter small.warn { color: color-mix(in srgb, var(--waiting) 75%, var(--ink)); font-weight: 600; }

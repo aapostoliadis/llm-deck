@@ -41,6 +41,13 @@ LLM_DECK_CI=1 node ~/.claude-deck/selfcheck.js
 self-check skip the checks that need a real desktop, such as the Claude and ChatGPT apps or the watchdog. To try a
 change on your real setup, run `node install.js` without them and then the self-check.
 
+## Tools
+
+- `node tools/record-demo.js` records `docs/demo.gif` from a throwaway demo deck with neutral example sessions. It needs
+  Edge or Chrome and never reads your real setup.
+- `bash tools/mac-ui-probe.sh ChatGPT` lists how a macOS app exposes its window to accessibility tools. It only reads
+  what's on screen and saves the result to your Desktop, to help add chat support for that app.
+
 ## Principles
 
 - **No dependencies.** Everything runs on Node.js and what the operating system provides. Please don't add packages.

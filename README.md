@@ -20,10 +20,7 @@
 </p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
-    <img src="docs/screenshot-light.png" width="900" alt="LLM Deck showing pinned, waiting, new result and background cards with mascots">
-  </picture>
+  <img src="docs/demo.gif" width="900" alt="LLM Deck in action: a session finishes and moves to New result, a permission request is approved with a one-second hold, and a new question arrives on a waiting card">
 </p>
 
 ## Why
@@ -53,13 +50,21 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 👀 **Double-tap** a Claude Code or Codex card to read its last reply without switching windows.
 - ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app.
 - 💬 **Quick replies** such as "Yes, continue", typed into the right conversation for you.
-- 📈 **Usage limits** for Claude and Codex, with a forecast under each bar of when you'd hit it at the current pace.
+- ❓ **Why it's waiting:** a tile that needs you quotes the question the session asked, so you can judge it without opening it.
+- 📈 **Usage limits** for Claude and Codex, with a forecast under each bar. The line turns amber, with one chime, when a limit is on track to run out before it resets.
 - 🔔 **A soft chime** when something needs you, a reminder if it waits too long, and quiet hours.
 - 🌙 **Night mode and dimming** on a schedule, with a gentle shift to protect the screen.
 - 📅 **This week** shows time, sessions and finished turns per project, and warns when a weekly limit won't last until it resets, naming the day and time it would run out. **Overnight** lists what finished, ran or got stuck while you were away.
 - 🧭 **Project groups**, with suggestions based on your recent work.
 - 📱 **Phone access** on the same Wi-Fi through a private link.
 - 💾 **Backups**, a built-in **self-test**, and a watchdog that restarts the deck if it stops.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+    <img src="docs/screenshot-light.png" width="900" alt="LLM Deck showing pinned, waiting, new result and background cards with mascots">
+  </picture>
+</p>
 
 ## Gestures
 
@@ -200,6 +205,7 @@ your own computer, and for how to report a problem or propose a change, see [CON
 | `watchdog.ps1`, `open-deck.ps1`, `start-deck.vbs`, `open-deck.sh` | Keep it running and open the full-screen window |
 | `public/` | The dashboard itself: `index.html`, `deck.css`, `deck.js` and the icons |
 | `selfcheck.js`, `defaults.js`, `install.js`, `install-mac.js` | Automated checks, default settings, installer |
+| `tools/` | Records the demo animation, and a read-only probe for adding chat support on macOS |
 
 ## Uninstall
 

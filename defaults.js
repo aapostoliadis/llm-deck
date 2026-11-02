@@ -38,6 +38,7 @@ module.exports = {
   officialLimitsMinutes: 15,
   chatPollSeconds: 4,
   desktopChats: true,
+  notifications: true,        // read Claude and Codex notifications
   codex: true,
 
   // fallback limit estimates and API price table (used only when official limits are unavailable)
