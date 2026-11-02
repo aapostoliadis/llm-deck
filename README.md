@@ -176,6 +176,16 @@ the private phone link.
 | ChatGPT cards look out of date | The deck can only read ChatGPT while its window is open; minimised is fine. |
 | Something else looks wrong | Run the self-check and **Settings › Run self-test**, then open an issue with the results. |
 
+## Automated checks
+
+Every push and pull request is checked on Windows, macOS and Linux, each with Node 22 and Node 24. A run checks every
+JavaScript, shell and PowerShell file, installs the deck into a throwaway folder, starts the server, makes sure a
+missing icon can't crash it, and runs the self-check. The **CI** badge at the top shows the latest result, and each
+commit gets a tick or a cross.
+
+To start a run by hand, open the **Actions** tab, choose **CI** and click **Run workflow**. To run the same checks on
+your own computer, and for how to report a problem or propose a change, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## How it's built
 
 | File | What it does |
