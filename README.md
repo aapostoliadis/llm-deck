@@ -171,6 +171,13 @@ line you had before), with `/usage` as a backup. Nothing is sent anywhere; the o
 are the weather ([Open-Meteo](https://open-meteo.com)) and the dashboard's fonts. Backups never include
 the private phone link.
 
+**Optional 5-minute limit check.** In Settings, "Check Claude limits every 5 minutes with my Claude Code sign-in"
+asks Anthropic's usage service directly, the same request Claude Code makes for `/usage`. It's off by default. When on,
+the deck reads your existing Claude Code sign-in at the moment of each check and sends it only to `api.anthropic.com`;
+it never stores, logs, refreshes or copies it. The service is unofficial and allows only a few requests per account,
+shared with Claude Code, so the deck skips a check when the status line has just reported, and waits 15, 30, then 60
+minutes when the service turns requests away. A bar always says how old its reading is.
+
 ## Troubleshooting
 
 | Problem | What to do |

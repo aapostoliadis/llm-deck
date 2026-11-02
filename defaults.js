@@ -24,6 +24,8 @@ module.exports = {
   quickReplies: ['Yes, continue', 'Go with your suggestion', 'Stop here for now'],
 
   // alerts and screen
+  usageCheck: false,           // check Claude's limits every few minutes with your Claude Code sign-in (opt-in)
+  usageCheckMinutes: 5,
   alertSound: true,
   quietHours: '23:00-07:00',
   autoTheme: true,

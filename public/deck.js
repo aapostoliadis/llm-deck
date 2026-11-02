@@ -322,7 +322,7 @@
     const replies = (c.quickReplies || []).slice(0, 6); while (replies.length < 4) replies.push('');
     const grpRow = (n, k) => '<div class="grp-row"><input type="text" class="g-name" value="' + esc(n) + '" placeholder="Project name"><input type="text" class="g-keys" value="' + esc(k) + '" placeholder="Keywords, separated by commas"><button type="button" class="icon-btn g-del" aria-label="Remove group">\u00d7</button></div>';
     const html = '<h3>Settings</h3><p class="sub">Changes apply as soon as you save.</p>'
-      + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
+      + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sUsage"> Check Claude limits every 5 minutes with my Claude Code sign-in</label></div><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
       + '<div class="set-row"><span>Quiet from</span><input type="time" id="sQa"><span>to</span><input type="time" id="sQb"></div></div>'
       + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div>'
       + '<div class="set-row"><span>Wait for the deck</span><input type="number" id="sWait" min="1" max="60"><span>minutes, then ask in the app</span></div></div>'
@@ -342,7 +342,7 @@
       + '<div class="modal-actions"><button type="button" data-close>Cancel</button><button type="button" class="primary" id="sSave">Save</button></div>';
     openModal(html, back => {
       const q = sel => back.querySelector(sel);
-      q('#sSound').checked = c.alertSound !== false; q('#sQa').value = qa; q('#sQb').value = qb;
+      q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sQa').value = qa; q('#sQb').value = qb;
       q('#sPerm').checked = c.deckPermissions !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
       q('#sOlder').value = c.olderHours || 3; q('#sChats').value = c.chatRecents ?? 8;
       q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
@@ -394,7 +394,7 @@
       q('#sSave').addEventListener('click', async () => {
         const num = (v, lo, hi, d) => { const n = +v; return isFinite(n) && v !== '' ? Math.max(lo, Math.min(hi, n)) : d; };
         const patch = {
-          alertSound: q('#sSound').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
+          alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
           deckPermissions: q('#sPerm').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
           quickReplies: [...back.querySelectorAll('.r-text')].map(i => i.value.trim()).filter(Boolean),
           olderHours: num(q('#sOlder').value, 0.5, 72, 3), chatRecents: Math.round(num(q('#sChats').value, 0, 50, 8)),

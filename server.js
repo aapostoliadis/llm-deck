@@ -14,6 +14,7 @@ const v3 = require('./v3');
 const notif = require('./notif');
 const suggester = require('./suggest');
 const backup = require('./backup');
+const usageApi = require('./usage-api');
 function openUrl(url, proc, pkg) {
   if (process.platform !== 'win32') { platform.openUrl(url); setTimeout(() => platform.focus(url.startsWith('codex:') ? 'codex' : /claude/i.test(proc) ? 'claude' : 'chatgpt'), 1500); return; }
   spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', "Start-Process '" + url + "'"], { stdio: 'ignore', windowsHide: true }).unref();
@@ -91,6 +92,30 @@ function refreshOfficial() {
     if (s || w) official = { at: Date.now(), s: s && { pct: +s[1], resetsAt: parseReset(s[2]) }, w: w && { pct: +w[1], resetsAt: parseReset(w[2]) } };
   });
 }
+// every few minutes, when switched on: the official limits from Anthropic's usage service
+// The service allows only a few requests per account, shared with Claude Code itself. When it refuses (429),
+// wait 15, then 30, then 60 minutes. A status line reading from the last few minutes makes a request unnecessary.
+let usageServiceError = '', usageNextAt = 0, usageBackoff = 0;
+const USAGE_BACKOFF = [15, 30, 60];
+function refreshUsageService() {
+  if (!cfg.usageCheck || Date.now() < usageNextAt) return;
+  const slr = readJSON(path.join(DATA, 'ratelimits.json'), null);
+  if (slr && slr.at && Date.now() - slr.at < 4.5 * 60e3) return;
+  usageApi.check((err, r) => {
+    if (err) {
+      const msg = String(err.message || err), busy = /\b429\b/.test(msg);
+      const wait = busy ? USAGE_BACKOFF[Math.min(usageBackoff, USAGE_BACKOFF.length - 1)] : /expired/.test(msg) ? 5 : 15;
+      if (busy) usageBackoff++;
+      usageNextAt = Date.now() + wait * 60e3;
+      usageServiceError = (busy ? 'the usage service is turning requests away' : msg) + '; next try in ' + wait + ' min';
+      return;
+    }
+    usageServiceError = ''; usageBackoff = 0; usageNextAt = 0;
+    if (!official || r.at >= official.at) official = r;
+  });
+}
+setTimeout(refreshUsageService, 3000);
+setInterval(refreshUsageService, Math.max(1, cfg.usageCheckMinutes || 5) * 60e3);
 setTimeout(refreshOfficial, 1000);
 setInterval(refreshOfficial, (cfg.officialLimitsMinutes || 15) * 60e3);
 let savedOfficial = official;
@@ -396,7 +421,7 @@ function state() {
   try { notif.apply(sessions, cfg, extras); } catch (_) {}
   extras.decorate(sessions, cfg);
   extras.dropHidden(sessions);
-  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
+  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
 }
 
 // ---------- opening terminals ----------
