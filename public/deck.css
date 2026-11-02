@@ -236,3 +236,6 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 .pbtn.allow { position: relative; overflow: hidden; isolation: isolate; }
 .pbtn.allow::before { content: ''; position: absolute; inset: 0; z-index: -1; background: rgba(4, 20, 14, .3); transform: scaleX(0); transform-origin: left center; }
 .pbtn.allow.arming::before { transform: scaleX(1); transition: transform 1s linear; }
+/* weekly outlook in the This week card */
+.outlook { margin: 6px 0 14px; padding: 12px 14px; border-radius: 12px; font-size: 15px; line-height: 1.45; background: var(--surface-2); border: 1px solid var(--line); }
+.outlook.warn { background: color-mix(in srgb, var(--waiting) 16%, var(--surface)); border-color: color-mix(in srgb, var(--waiting) 55%, var(--line)); color: var(--ink); font-weight: 600; }

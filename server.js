@@ -488,6 +488,7 @@ async function openSession(id) {
 
 // ---------- weekly summary, new sessions, self-test ----------
 function weekly() {
+  if (!cache.usage) state();
   const now = Date.now(), from = now - 7 * 864e5, dt = desktopTitles(), rows = new Map(), turns = new Map();
   const row = g => { if (!rows.has(g)) rows.set(g, { project: g, minutes: 0, sessions: 0, turns: 0, codex: 0 }); return rows.get(g); };
   try { for (const l of fs.readFileSync(EVENTS, 'utf8').split('\n')) { if (!l.includes('"Stop"')) continue; try { const e = JSON.parse(l); if (e.e === 'Stop' && e.t >= from) turns.set(e.sid, (turns.get(e.sid) || 0) + 1); } catch (_) {} } } catch (_) {}
@@ -499,7 +500,7 @@ function weekly() {
     const r = row(g); r.minutes += ms / 60e3; r.sessions += 1; r.turns += turns.get(f.meta.id) || 0;
   }
   try { for (const t of codex.weekThreads(7)) row(extras.groupOf(t, cfg) || 'Other').codex += 1; } catch (_) {}
-  return { from, rows: [...rows.values()].sort((a, b) => b.minutes - a.minutes || b.codex - a.codex), limits: Object.assign(extras.limitHistory(from), { weekNow: cache.usage && cache.usage.weekly ? cache.usage.weekly.pct : null }) };
+  return { from, rows: [...rows.values()].sort((a, b) => b.minutes - a.minutes || b.codex - a.codex), limits: Object.assign(extras.limitHistory(from), { weekNow: cache.usage && cache.usage.weekly ? cache.usage.weekly.pct : null, weekResetsAt: cache.usage && cache.usage.weekly ? cache.usage.weekly.resetsAt : null, extra: (cache.usage && cache.usage.extra) || [] }) };
 }
 function newSession(group) {
   if (process.platform !== 'win32') {

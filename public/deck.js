@@ -502,6 +502,30 @@
     } catch (_) { toast('Could not reach the LLM Deck server'); }
   }
 
+  /* weekly outlook: will the weekly limit last until it resets, at this week's pace? */
+  const spanText = ms => {
+    const h = Math.round(ms / 3600e3), d = Math.floor(h / 24), r = h % 24;
+    if (d && r) return d + (d === 1 ? ' day' : ' days') + ' and ' + r + (r === 1 ? ' hour' : ' hours');
+    if (d) return d + (d === 1 ? ' day' : ' days');
+    return Math.max(1, r) + (r === 1 ? ' hour' : ' hours');
+  };
+  const whenText = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'long' }) + ' at ' + new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  function weeklyOutlook(name, pct, reset, now) {
+    now = now || Date.now();
+    if (pct == null || !reset || reset <= now) return null;
+    const start = reset - 7 * 864e5, used = now - start, resetAt = whenText(reset);
+    if (pct >= 100) return { warn: true, text: 'Your ' + name + ' weekly limit is used up. It resets on ' + resetAt + '.' };
+    if (used < 6 * 3600e3 || pct < 2) return { warn: false, text: 'It\u2019s too early in the week to forecast your ' + name + ' weekly limit. It resets on ' + resetAt + '.' };
+    const runsOut = start + used * (100 / pct);
+    if (runsOut < reset) {
+      const d = new Date(runsOut);
+      const day = d.toLocaleDateString('en-GB', { weekday: 'long' }), at = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return { warn: true, text: 'At this week\u2019s pace, your ' + name + ' weekly limit won\u2019t be enough: it runs out on ' + day + ' around ' + at + ', ' + spanText(reset - runsOut) + ' before it resets on ' + resetAt + '.' };
+    }
+    const projected = Math.min(99, Math.round(pct * (7 * 864e5) / used));
+    return { warn: false, text: 'At this week\u2019s pace, you\u2019ll use about ' + projected + '% of your ' + name + ' weekly limit by the time it resets on ' + resetAt + ', so it should last.' };
+  }
+
   async function showWeek() {
     if (!LIVE) return toast('The weekly summary works on the live deck');
     openModal('<h3>This week</h3><p class="sub">Adding it up\u2026</p>');
@@ -511,9 +535,13 @@
     const hrs = m => m >= 60 ? Math.floor(m / 60) + 'h ' + Math.round(m % 60) + 'm' : Math.round(m) + 'm';
     const rows = (j.rows || []).map(r => '<tr><td>' + esc(r.project) + '</td><td class="n">' + hrs(r.minutes) + '</td><td class="n">' + r.sessions + '</td><td class="n">' + r.turns + '</td><td class="n">' + r.codex + '</td></tr>').join('');
     const L = j.limits || {}, lim = [];
+    const looks = [weeklyOutlook('Claude', L.weekNow, L.weekResetsAt)]
+      .concat((L.extra || []).filter(x => /weekly/i.test(x.label)).map(x => weeklyOutlook(x.label.replace(/\s*weekly/i, ''), x.pct, x.resetsAt)))
+      .filter(Boolean);
+    const outlookHtml = looks.map(o => '<p class="outlook' + (o.warn ? ' warn' : '') + '">' + esc(o.text) + '</p>').join('');
     if (L.weekNow != null) lim.push('Claude weekly limit: ' + Math.round(L.weekNow) + '% used now' + (L.weekPeak != null ? ', highest recorded this week ' + Math.round(L.weekPeak) + '%' : '') + '.');
     if (L.since) lim.push('5-hour limit reached ' + L.fiveHits + (L.fiveHits === 1 ? ' time' : ' times') + ' (records start ' + new Date(L.since).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ').');
-    openModal('<h3>This week</h3><p class="sub">Last 7 days. Active time and turns count Claude Code; Codex shows threads worked on. Chats aren\u2019t included.</p>'
+    openModal('<h3>This week</h3>' + outlookHtml + '<p class="sub">Last 7 days. Active time and turns count Claude Code; Codex shows threads worked on. Chats aren\u2019t included.</p>'
       + '<table class="week-table"><thead><tr><th>Project</th><th class="n">Active time</th><th class="n">Sessions</th><th class="n">Turns finished</th><th class="n">Codex threads</th></tr></thead><tbody>'
       + (rows || '<tr><td colspan="5">Nothing yet.</td></tr>') + '</tbody></table>'
       + '<p class="sub" style="margin-top:14px">' + lim.join(' ') + '</p><div class="modal-actions"><button type="button" class="primary" data-close>Done</button></div>');
