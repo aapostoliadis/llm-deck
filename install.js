@@ -12,6 +12,7 @@ const SRC = __dirname;
 const DECK = path.join(HOME, '.claude-deck');          // internal folder name kept for compatibility
 const SETTINGS = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude'), 'settings.json');
 const say = m => console.log('  ' + m);
+const NOSYS = !!process.env.LLM_DECK_NO_SYSTEM; // automated tests: no shortcuts, login items or start
 
 console.log('Installing LLM Deck into ' + DECK);
 fs.mkdirSync(DECK, { recursive: true });
@@ -55,7 +56,7 @@ fs.writeFileSync(SETTINGS, JSON.stringify(settings, null, 2));
 say('Claude Code hooks registered in ' + SETTINGS);
 
 // 4. Windows: desktop and start-at-login shortcuts with the LLM Deck icon
-if (process.platform === 'win32') {
+if (process.platform === 'win32' && !NOSYS) {
   const ps = [
     "$icons = '" + path.join(DECK, 'public', 'icons') + "'",
     "$c = Get-AppxPackage -Name Claude | Select-Object -First 1",
@@ -82,9 +83,10 @@ if (process.platform === 'win32') {
 }
 
 // 4b. macOS: start at login, an LLM Deck app, and the app icons
-if (process.platform === 'darwin') require('./install-mac.js')({ HOME, DECK, say });
+if (process.platform === 'darwin' && !NOSYS) require('./install-mac.js')({ HOME, DECK, say });
 
 // 5. start it, unless it's already running
+if (NOSYS) { say('test mode: shortcuts, login items and start skipped'); done(); } else {
 const sock = net.connect(cfg.port || 7777, '127.0.0.1');
 sock.on('connect', () => { sock.end(); say('LLM Deck is already running. Restart it (or sign out and in) to load the new files.'); done(); });
 sock.on('error', () => {
@@ -93,4 +95,5 @@ sock.on('error', () => {
   else say('start it with: node "' + path.join(DECK, 'server.js') + '", then open http://localhost:' + (cfg.port || 7777));
   done();
 });
+}
 function done() { console.log('Done. Check everything with: node "' + path.join(DECK, 'selfcheck.js') + '"'); }

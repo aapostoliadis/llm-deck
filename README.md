@@ -11,6 +11,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/aapostoliadis/llm-deck/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/aapostoliadis/llm-deck/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Platforms: Windows and macOS" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-4F7BF2">
   <img alt="Node.js 22.5 or newer" src="https://img.shields.io/badge/node-%E2%89%A5%2022.5-2AA87F">
   <img alt="Works with Claude Code, Claude, ChatGPT and Codex" src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Claude%20%C2%B7%20ChatGPT%20%C2%B7%20Codex-EE9F25">

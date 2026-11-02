@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.os }}, Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    defaults:
+      run:
+        shell: bash
+    env:
+      LLM_DECK_CI: '1'          # self-check skips checks that need a real desktop
+      LLM_DECK_NO_SYSTEM: '1'   # installer skips shortcuts, login items and starting the deck
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Check JavaScript
+        run: for f in *.js public/deck.js; do node --check "$f"; done
+
+      - name: Check shell and PowerShell scripts
+        run: |
+          bash -n open-deck.sh
+          pwsh -NoProfile -Command '
+            $bad = 0
+            foreach ($f in Get-ChildItem *.ps1) {
+              $t = $null; $e = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$t, [ref]$e) | Out-Null
+              if ($e) { Write-Host "$($f.Name): $($e[0].Message)"; $bad = 1 }
+            }
+            exit $bad'
+
+      - name: Install into a throwaway home folder
+        run: |
+          export HOME="$RUNNER_TEMP/home" USERPROFILE="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          node install.js
+
+      - name: Start the server and run the self-check
+        run: |
+          export HOME="$RUNNER_TEMP/home" USERPROFILE="$RUNNER_TEMP/home"
+          node "$HOME/.claude-deck/server.js" > "$RUNNER_TEMP/server.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:7777/api/state > /dev/null && break; sleep 1; done
+          curl -sf http://localhost:7777/api/state > /dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:7777/icons/missing.png)" = 404
+          curl -sf http://localhost:7777/api/state > /dev/null
+          node "$HOME/.claude-deck/selfcheck.js"
+
+      - name: Server log
+        if: always()
+        run: cat "$RUNNER_TEMP/server.log" || true

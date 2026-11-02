@@ -12,6 +12,8 @@ const HOME = os.homedir();
 let pass = 0, fail = 0;
 const ok = (name, cond, info) => { cond ? pass++ : fail++; console.log((cond ? '  ok    ' : '  FAIL  ') + name + (info ? '  (' + info + ')' : '')); };
 const section = t => console.log('\n' + t);
+const CI = !!process.env.LLM_DECK_CI; // automated tests: skip checks that need a real desktop
+const maybe = (name, cond, info) => (CI ? console.log('  skip  ' + name + '  (not checked in CI)') : ok(name, cond, info));
 const rj = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return null; } };
 
 const cfg = Object.assign({}, require('./defaults'), rj(path.join(DECK, 'config.json')) || {});
@@ -60,19 +62,19 @@ const get = p => new Promise(res => {
   if (st.code === 200) {
     const s = st.json || {};
     ok('sessions and limits present', Array.isArray(s.sessions) && !!s.usage, (s.sessions || []).length + ' cards');
-    ok('limits are official, not estimates', s.usage && s.usage.fiveHour && s.usage.fiveHour.source === 'claude');
+    maybe('limits are official, not estimates', s.usage && s.usage.fiveHour && s.usage.fiveHour.source === 'claude');
     for (const p of ['/deck.css', '/deck.js', '/api/config', '/api/summary', '/api/suggest-groups', '/api/backup']) { const r = await get(p); ok('GET ' + p, r.code === 200); }
     const b = await get('/api/backup');
     ok('backup excludes the private phone link', b.json && b.json.kind === 'backup' && !('remoteToken' in (b.json.config || {})));
     const card = (s.sessions || []).find(x => x.app === 'claude');
-    if (card) { const p = await get('/api/peek?id=' + encodeURIComponent(card.id)); ok('peek returns a reply', p.code === 200 && p.json && p.json.peek, card.title); }
+    if (card) { const p = await get('/api/peek?id=' + encodeURIComponent(card.id)); maybe('peek returns a reply', p.code === 200 && p.json && p.json.peek, card.title); }
     if (process.platform === 'win32') {
       const h = s.health || {};
-      for (const k of ['claude', 'chatgpt']) ok(k + ' app readable', h[k] === 'ok' || h[k] === 'closed', h[k] === 'closed' ? 'window closed, skipped' : h[k]);
+      for (const k of ['claude', 'chatgpt']) maybe(k + ' app readable', h[k] === 'ok' || h[k] === 'closed', h[k] === 'closed' ? 'window closed, skipped' : h[k]);
     }
   }
 
-  if (process.platform === 'win32') {
+  if (process.platform === 'win32' && !CI) {
     section('Windows');
     const n = require('./notif'); const list = n.read();
     ok('notifications readable', !n.lastError(), list.length + ' recent');
@@ -83,7 +85,7 @@ const get = p => new Promise(res => {
     ok('start-at-login shortcut', fs.existsSync(path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'LLM Deck.lnk')));
   }
 
-  if (process.platform === 'darwin') {
+  if (process.platform === 'darwin' && !CI) {
     section('macOS');
     const n = require('./notif'); n.read();
     ok('notifications readable', !n.lastError(), n.lastError() ? 'give node Full Disk Access in System Settings \u203a Privacy & Security' : '');
