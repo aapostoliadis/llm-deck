@@ -258,3 +258,8 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 .card .ask { font-size: 12px; line-height: 1.3; padding: 4px 8px; margin-top: 5px; }
 .card .chips { gap: 5px; margin-top: 6px; }
 .card .chip { min-height: 30px; padding: 0 10px; border-radius: 15px; font-size: 12px; }
+
+/* show everything on a card: wrap instead of clipping */
+.card .title { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; }
+.card .proj, .card .status { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.card .ask { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; }
