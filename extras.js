@@ -79,8 +79,8 @@ function decorate(sessions, cfg) {
 
 // 7. can the deck read the desktop apps right now?
 const missSince = {};
-function health() {
-  if (process.platform !== 'win32') return {};
+function health(cfg) {
+  if (process.platform !== 'win32' || (cfg && cfg.desktopChats === false)) return {}; // chat reading switched off on purpose
   const j = rj(path.join(DATA, 'apps.json'), null);
   const fresh = j && Date.now() - (j.at || 0) < 60e3;
   const h = {};
