@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // LLM Deck: records docs/demo.gif from a throwaway demo deck with neutral example sessions.
 // Needs Node 22+ and Microsoft Edge or Google Chrome. Nothing on your real setup is read or changed.
-// Usage: node tools/record-demo.js [output.gif]
+// Usage: node tools/record-demo.js [output.gif]      the animation (docs/demo.gif)
+//        node tools/record-demo.js --screens         dark and light screenshots (docs/screenshot-*.png)
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -10,7 +11,8 @@ const { spawn } = require('child_process');
 const { readPng, writeGif } = require('./gif.js');
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.resolve(process.argv[2] || path.join(ROOT, 'docs', 'demo.gif'));
+const ARGS = process.argv.slice(2), SCREENS = ARGS.includes('--screens');
+const OUT = path.resolve(ARGS.find(a => !a.startsWith('--')) || path.join(ROOT, 'docs', 'demo.gif'));
 const W = 1280, H = 720, SCALE = 0.75, FPS = 8;
 const net = require('net');
 const freePort = () => new Promise(r => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
@@ -98,6 +100,19 @@ await (async () => {
     await sleep(1500);
     await js("localStorage.setItem('deck-theme','dark'); location.reload()");
     await sleep(3500);
+
+    if (SCREENS) { // full-size stills in both themes
+      await cmd('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+      for (const theme of ['dark', 'light']) {
+        await js("localStorage.setItem('deck-theme','" + theme + "'); location.reload()");
+        await sleep(3500);
+        const shot = await cmd('Page.captureScreenshot', { format: 'png' });
+        const file = path.join(ROOT, 'docs', 'screenshot-' + theme + '.png');
+        fs.writeFileSync(file, Buffer.from(shot.data, 'base64'));
+        console.log('Saved ' + file);
+      }
+      return finish(0);
+    }
 
     const frames = [];
     const shoot = async () => { const r = await cmd('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: W, height: H, scale: SCALE } }); frames.push({ ...readPng(Buffer.from(r.data, 'base64')), delay: 1000 / FPS }); };

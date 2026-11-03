@@ -43,7 +43,7 @@ change on your real setup, run `node install.js` without them and then the self-
 
 ## Tools
 
-- `node tools/record-demo.js` records `docs/demo.gif` from a throwaway demo deck with neutral example sessions. It needs
+- `node tools/record-demo.js` records `docs/demo.gif`, and `--screens` saves the dark and light screenshots, both from a throwaway demo deck with neutral example sessions. It needs
   Edge or Chrome and never reads your real setup.
 - `bash tools/mac-ui-probe.sh ChatGPT` lists how a macOS app exposes its window to accessibility tools. It only reads
   what's on screen and saves the result to your Desktop, to help add chat support for that app.
