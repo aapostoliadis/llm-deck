@@ -101,7 +101,7 @@ Claude Code hooks (saving a backup of your Claude Code settings first), sets the
 On Windows it creates **LLM Deck** shortcuts on the desktop and in Startup; on macOS it adds login agents and an
 **LLM Deck** app in `~/Applications`. The deck opens full screen on the smaller of your displays.
 
-To update, pull the latest version and run `node install.js` again. Your settings are kept.
+To update, pull the latest version and run `node install.js` again. Your settings are kept. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ### On macOS
 
