@@ -9,6 +9,13 @@ All notable changes to LLM Deck, newest first. Versions follow [semantic version
 - **An agent's own options as buttons.** When Claude Code asks a multiple-choice question, the card shows its options;
   one tap answers it. "Answer in app", or no tap within 2 minutes, hands the question back to the app's picker.
   Questions with several parts or several picks go straight to the app. A Settings switch turns it off.
+- **Desk-aware prompts.** When you've used your keyboard or mouse in the last minute, permissions and questions go
+  straight to the app instead of waiting for the deck. A tap on the deck itself doesn't count. A Settings switch turns
+  it off. On Windows it needs the chat reader running (the default).
+- **Problems on the deck.** The left panel says when something needs attention (an old limit reading, missing hooks, a
+  missing status line), and tapping it explains what to do.
+- **Releases from the changelog.** Pushing a version tag publishes the release with that version's changelog section,
+  after the tests pass and `version.js` is checked against the tag.
 - **`node install.js --uninstall`** removes what the installer added and restores your previous status line.
 - **Optional "new version" note.** With the setting on, the deck asks GitHub once a day and says when a newer release is
   out. It's off by default.

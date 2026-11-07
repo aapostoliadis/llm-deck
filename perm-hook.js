@@ -38,6 +38,7 @@ function main() {
   const risky = RISKY.test(cmd) || /delete|remove|trash|send|publish|deploy|purchase|pay|transfer|share/i.test(tool);
   if (process.env.LLM_DECK_PERM_SELFTEST) { process.stdout.write(risky ? 'risky' : 'safe'); process.exit(0); }
   if (risky) return out();
+  try { if (require('./desk.js').atDesk(cfg)) return out(); } catch (_) {} // at your computer: the app asks you directly
 
   fs.mkdirSync(DIR, { recursive: true });
   const id = Date.now() + '-' + crypto.randomBytes(4).toString('hex');

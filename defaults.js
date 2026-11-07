@@ -20,7 +20,9 @@ module.exports = {
 
   // permissions and replies
   deckPermissions: true,
-  deckQuestions: true,         // show an agent's multiple-choice questions on the deck
+  deckQuestions: true,
+  deskAware: true,             // when you're at your computer, prompts go straight to the app
+  deskActiveSeconds: 60,       // 'at your computer' means keyboard or mouse used this recently         // show an agent's multiple-choice questions on the deck
   questionWaitSeconds: 120,    // then hand the question back to the app
   permWaitSeconds: 600,
   quickReplies: ['Yes, continue', 'Go with your suggestion', 'Stop here for now'],

@@ -28,7 +28,7 @@ const get = p => new Promise(res => {
 (async () => {
   section('Files');
   const runtime = ['server.js', 'hook.js', 'perm-hook.js', 'codex.js', 'extras.js', 'v3.js', 'notif.js', 'suggest.js', 'backup.js', 'defaults.js',
-    'usage-api.js', 'version.js', 'question-hook.js', 'statusline.js', 'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
+    'usage-api.js', 'version.js', 'desk.js', 'question-hook.js', 'statusline.js', 'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
     'public/index.html', 'public/deck.css', 'public/deck.js', 'public/icons/llm-deck.ico', 'public/icons/llm-deck-32.png'];
   const missing = runtime.filter(f => !fs.existsSync(path.join(DECK, f)));
   ok('all program files present', !missing.length, missing.join(', '));

@@ -2,6 +2,7 @@
 # and writes ~/.claude-deck/apps.json every few seconds.
 param([int]$ParentPid = 0, [int]$Interval = 5, [switch]$Once)
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class DeckIdle { [StructLayout(LayoutKind.Sequential)] struct LII { public uint cbSize; public uint dwTime; } [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LII p); public static long Ms() { var l = new LII(); l.cbSize = (uint)Marshal.SizeOf(l); if (!GetLastInputInfo(ref l)) return -1; return (long)unchecked((uint)Environment.TickCount - l.dwTime); } }' -ErrorAction SilentlyContinue
 $out = Join-Path $env:USERPROFILE '.claude-deck\apps.json'
 $A = [System.Windows.Automation.AutomationElement]
 $CT = [System.Windows.Automation.ControlType]
@@ -93,6 +94,7 @@ while ($true) {
   $state = @{ at = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() }
   try { $state.claude = Read-Claude } catch { $state.claude = @{ open = $false; error = $_.Exception.Message } }
   try { $state.chatgpt = Read-ChatGPT } catch { $state.chatgpt = @{ open = $false; error = $_.Exception.Message } }
+  try { $idle = [DeckIdle]::Ms(); if ($idle -ge 0) { $state.lastInputAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - $idle } } catch {}
   $json = $state | ConvertTo-Json -Depth 6 -Compress
   [System.IO.File]::WriteAllText("$out.tmp", $json, (New-Object System.Text.UTF8Encoding($false)))
   Move-Item "$out.tmp" $out -Force

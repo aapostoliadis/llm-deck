@@ -13,7 +13,7 @@ const CX = path.join(HOME, '.codex', 'sessions');
 const bool = v => typeof v === 'boolean';
 const EDITABLE = {
   quietHours: v => /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(v),
-  alertSound: bool, usageCheck: bool, updateCheck: bool, deckPermissions: bool, deckQuestions: bool, autoTheme: bool, dimAtNight: bool, pixelShift: bool, remoteAccess: bool,
+  alertSound: bool, usageCheck: bool, updateCheck: bool, deckPermissions: bool, deckQuestions: bool, deskAware: bool, autoTheme: bool, dimAtNight: bool, pixelShift: bool, remoteAccess: bool,
   permWaitSeconds: v => Number.isInteger(v) && v >= 30 && v <= 3600,
   olderHours: v => typeof v === 'number' && v >= 0.5 && v <= 72,
   chatRecents: v => Number.isInteger(v) && v >= 0 && v <= 50,

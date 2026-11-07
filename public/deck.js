@@ -327,7 +327,7 @@
     const html = '<h3>Settings</h3><p class="sub">Changes apply as soon as you save.</p>'
       + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sUsage"> Check Claude limits every 5 minutes with my Claude Code sign-in</label></div><div class="set-row"><label><input type="checkbox" id="sUpd"> Tell me when a new version is out (asks GitHub once a day)</label></div><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
       + '<div class="set-row"><span>Quiet from</span><input type="time" id="sQa"><span>to</span><input type="time" id="sQb"></div></div>'
-      + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div><div class="set-row"><label><input type="checkbox" id="sQuest"> Show an agent’s questions with its options</label></div>'
+      + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div><div class="set-row"><label><input type="checkbox" id="sQuest"> Show an agent’s questions with its options</label></div><div class="set-row"><label><input type="checkbox" id="sDesk"> When I’m at my computer, ask me in the app instead</label></div>'
       + '<div class="set-row"><span>Wait for the deck</span><input type="number" id="sWait" min="1" max="60"><span>minutes, then ask in the app</span></div></div>'
       + '<div class="set-sec"><h4>Quick replies</h4>' + replies.map(r => '<div class="set-row"><input type="text" class="r-text" style="flex:1" maxlength="80" value="' + esc(r) + '" placeholder="Reply text"></div>').join('') + '</div>'
       + '<div class="set-sec"><h4>Background column</h4><div class="set-row"><span>Fold idle cards older than</span><input type="number" id="sOlder" min="0.5" max="72" step="0.5"><span>hours</span></div>'
@@ -346,7 +346,7 @@
     openModal(html, back => {
       const q = sel => back.querySelector(sel);
       q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sUpd').checked = !!c.updateCheck; q('#sQa').value = qa; q('#sQb').value = qb;
-      q('#sPerm').checked = c.deckPermissions !== false; q('#sQuest').checked = c.deckQuestions !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
+      q('#sPerm').checked = c.deckPermissions !== false; q('#sQuest').checked = c.deckQuestions !== false; q('#sDesk').checked = c.deskAware !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
       q('#sOlder').value = c.olderHours || 3; q('#sChats').value = c.chatRecents ?? 8;
       q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
       q('#sShift').checked = c.pixelShift !== false; q('#sRemote').checked = !!c.remoteAccess;
@@ -398,7 +398,7 @@
         const num = (v, lo, hi, d) => { const n = +v; return isFinite(n) && v !== '' ? Math.max(lo, Math.min(hi, n)) : d; };
         const patch = {
           alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, updateCheck: q('#sUpd').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
-          deckPermissions: q('#sPerm').checked, deckQuestions: q('#sQuest').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
+          deckPermissions: q('#sPerm').checked, deckQuestions: q('#sQuest').checked, deskAware: q('#sDesk').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
           quickReplies: [...back.querySelectorAll('.r-text')].map(i => i.value.trim()).filter(Boolean),
           olderHours: num(q('#sOlder').value, 0.5, 72, 3), chatRecents: Math.round(num(q('#sChats').value, 0, 50, 8)),
           autoTheme: q('#sAuto').checked, dimAtNight: q('#sDim').checked, dimAfterMinutes: Math.round(num(q('#sDimMin').value, 1, 240, 10)),
@@ -454,10 +454,27 @@
     n.textContent = 'LLM Deck ' + v + ' is out. To update, run git pull, then node install.js.';
   }
 
+  function problemNote(list) {
+    let n = document.getElementById('probNote');
+    if (!list || !list.length) { if (n) n.remove(); return; }
+    if (!n) {
+      n = document.createElement('div'); n.id = 'probNote'; n.className = 'upd-note warn'; n.setAttribute('role', 'button');
+      const rail = document.querySelector('.rail-actions'); if (rail) rail.parentNode.insertBefore(n, rail); else document.body.appendChild(n);
+      n.addEventListener('click', () => openModal('<h3>Needs attention</h3>' + (DECK.problems || []).map(t => '<p>' + esc(t) + '</p>').join('') + '<p class="sub">Settings has a full self-test.</p><div class="modal-actions"><button type="button" class="primary" data-close>Done</button></div>'));
+    }
+    n.textContent = list.length === 1 ? '1 thing needs attention' : list.length + ' things need attention';
+  }
+  // taps on this screen are reported, so the hooks don't mistake them for you working at the computer
+  let touchSent = 0;
+  document.addEventListener('pointerdown', () => {
+    if (!/^(127\.0\.0\.1|localhost)$/.test(location.hostname) || Date.now() - touchSent < 2000) return;
+    touchSent = Date.now(); fetch('/api/touch', { method: 'POST' }).catch(() => {});
+  }, true);
+
   function applyDeck(deck) {
     DECK = deck || {}; QUICK = DECK.quickReplies || [];
     if (DECK.version) { if (pageVersion === null) pageVersion = DECK.version; else if (DECK.version !== pageVersion) { location.reload(); return; } }
-    maybeAutoDigest(); screenCare(); staleCheck(); updateNote(DECK.newRelease);
+    maybeAutoDigest(); screenCare(); staleCheck(); updateNote(DECK.newRelease); problemNote(DECK.problems);
   }
 
   $('settingsBtn').addEventListener('click', openSettings);

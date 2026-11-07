@@ -389,6 +389,24 @@ setTimeout(() => backup.autoDaily(cfg), 15000); setInterval(() => backup.autoDai
 
 // ---------- state ----------
 let cache = { at: 0, files: [], usage: null };
+// things the deck should tell you about, checked at most every 30 seconds
+let problemCache = { at: 0, list: [] };
+function problems() {
+  if (Date.now() - problemCache.at < 30e3) return problemCache.list;
+  const list = [], u = cache.usage && cache.usage.fiveHour;
+  if (cfg.officialLimits !== false) {
+    if (!u || u.source !== 'claude' || !u.asOf) list.push('There is no official Claude limit reading yet' + (cfg.usageCheck ? (usageServiceError ? ': ' + usageServiceError : '') + '. Using a Claude Code session for a moment also gets one.' : '. Using a Claude Code session for a moment gets one, or turn on the 5-minute check in Settings.'));
+    else if (Date.now() - u.asOf > 60 * 60e3) list.push('The Claude limit reading is ' + Math.round((Date.now() - u.asOf) / 60e3) + ' minutes old' + (usageServiceError ? ': ' + usageServiceError : '') + '.');
+  }
+  let set = {}; try { set = JSON.parse(fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(require('os').homedir(), '.claude'), 'settings.json'), 'utf8')); } catch (_) {}
+  const ours = g => (g.hooks || []).some(h => String(h.command || '').includes('claude-deck'));
+  const missing = ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd', 'PermissionRequest', 'PreToolUse'].filter(ev => !((set.hooks || {})[ev] || []).some(ours));
+  if (missing.length) list.push('Claude Code hooks are missing (' + missing.join(', ') + '). Running node install.js again adds them.');
+  if (!String((set.statusLine || {}).command || '').includes('claude-deck')) list.push('The LLM Deck status line is not set up, so limits refresh less often. Running node install.js again sets it up.');
+  problemCache = { at: Date.now(), list };
+  return list;
+}
+
 function state() {
   readEvents();
   const now = Date.now();
@@ -434,7 +452,7 @@ function state() {
   try { notif.apply(sessions, cfg, extras); } catch (_) {}
   extras.decorate(sessions, cfg);
   extras.dropHidden(sessions);
-  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, release: RELEASE, newRelease: cfg.updateCheck ? newRelease : null, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
+  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, problems: problems(), release: RELEASE, newRelease: cfg.updateCheck ? newRelease : null, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
 }
 
 // ---------- opening terminals ----------
@@ -640,6 +658,10 @@ http.createServer(async (req, res) => {
     if (req.method === 'POST' && req.url === '/api/perm') {
       const b = await body(req);
       extras.answer(b.req, b.decision, b.label);
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && req.url === '/api/touch') { // a tap on the deck, so the hooks don't count it as desk activity
+      try { fs.writeFileSync(path.join(DATA, 'touch.json'), JSON.stringify({ at: Date.now() })); } catch (_) {}
       return send(res, 200, { ok: true });
     }
     if (req.method === 'POST' && req.url === '/api/pin') {

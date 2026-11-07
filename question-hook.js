@@ -30,6 +30,7 @@ function main() {
   if (!q || !q.question || q.multiSelect || !Array.isArray(q.options) || !q.options.length) return out();
   const options = q.options.map(o => String((o && o.label) || '').slice(0, 80)).filter(Boolean).slice(0, 6);
   if (!options.length) return out();
+  try { if (require('./desk.js').atDesk(cfg)) return out(); } catch (_) {} // at your computer: the app asks you directly
 
   fs.mkdirSync(DIR, { recursive: true });
   const id = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
