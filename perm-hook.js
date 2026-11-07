@@ -30,6 +30,7 @@ function main() {
   if (cfg.deckPermissions === false || !p.session_id) return out();
 
   const tool = String(p.tool_name || '');
+  if (tool === 'AskUserQuestion') return out(); // questions are handled by question-hook.js
   const inp = p.tool_input || {};
   const cmd = String(inp.command || '');
   let summary = cmd || (inp.file_path && path.basename(String(inp.file_path))) || inp.url || inp.path || inp.pattern || Object.keys(inp).slice(0, 3).join(', ');

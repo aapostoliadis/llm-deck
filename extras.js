@@ -34,21 +34,29 @@ function loadOfficial() {
 function saveOfficial(o) { wj(LIMF, o); }
 
 // 1. permission requests waiting for Allow/Deny
+function dropPerm(id) { for (const x of ['.req.json', '.ans.json']) { try { fs.unlinkSync(path.join(PERMS, id + x)); } catch (_) {} } }
 function perms() {
   const now = Date.now(), out = [];
   let files = []; try { files = fs.readdirSync(PERMS); } catch (_) {}
   for (const f of files) {
     if (!f.endsWith('.req.json')) continue;
     const p = rj(path.join(PERMS, f), null);
-    if (!p || now - p.t > (p.wait || 300) * 1000 + 5000) continue;
+    if (!p || now - p.t > (p.wait || 300) * 1000 + 5000) { // past its waiting time: clear it away
+      if (!p || now - (p.t || 0) > (p.wait || 300) * 1000 + 60e3) dropPerm(f.replace('.req.json', ''));
+      continue;
+    }
     if (fs.existsSync(path.join(PERMS, p.id + '.ans.json'))) continue;
     out.push(p);
   }
   return out;
 }
-function answer(req, decision) {
-  if (!/^[\w-]+$/.test(String(req)) || !['allow', 'deny', 'ask'].includes(decision)) throw new Error('bad request');
-  wj(path.join(PERMS, req + '.ans.json'), { decision, t: Date.now() });
+function answer(req, decision, label) {
+  if (!/^[\w-]+$/.test(String(req)) || !['allow', 'deny', 'ask', 'answer'].includes(decision)) throw new Error('bad request');
+  if (decision === 'answer') { // only one of the options the agent offered
+    const r = rj(path.join(PERMS, req + '.req.json'), null);
+    if (!r || !Array.isArray(r.options) || !r.options.includes(label)) throw new Error('bad answer');
+  }
+  wj(path.join(PERMS, req + '.ans.json'), decision === 'answer' ? { decision, label, t: Date.now() } : { decision, t: Date.now() });
 }
 function releasePerms(sid) { for (const p of perms()) if (p.sid === sid) answer(p.id, 'ask'); }
 
@@ -72,8 +80,10 @@ function decorate(sessions, cfg) {
   for (const s of sessions) {
     s.group = groupOf(s, cfg);
     if ((s.state === 'ready' || s.state === 'failed') && Object.prototype.hasOwnProperty.call(dismissed, s.id) && dismissed[s.id] === ((s.app === 'claude-chat' || s.app === 'chatgpt') ? (s.detail || '') : String(s.since))) s.state = 'idle';
-    const p = pend.find(x => x.sid === s.id);
-    if (p) { s.state = 'waiting'; s.since = p.t; s.perm = { id: p.id, tool: p.tool, summary: p.summary }; s.detail = p.tool + ': ' + p.summary; }
+    let p = pend.find(x => x.sid === s.id);
+    // the session moved on after the request (the tool ran, or it was denied): it was settled in the app
+    if (p && s.state !== 'waiting' && s.lastTs && s.lastTs > p.t + 2000) { dropPerm(p.id); p = null; }
+    if (p) { s.state = 'waiting'; s.since = p.t; s.perm = { id: p.id, tool: p.tool, summary: p.summary, kind: p.kind || 'perm', question: p.question, options: p.options }; s.detail = p.kind === 'question' ? 'Has a question for you' : p.tool + ': ' + p.summary; }
   }
 }
 

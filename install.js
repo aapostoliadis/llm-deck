@@ -14,6 +14,47 @@ const SETTINGS = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.cl
 const say = m => console.log('  ' + m);
 const NOSYS = !!process.env.LLM_DECK_NO_SYSTEM; // automated tests: no shortcuts, login items or start
 
+// node install.js --uninstall: removes what the installer added, keeps your deck folder with its settings and backups
+if (process.argv.includes('--uninstall')) {
+  const { execFileSync } = require('child_process');
+  console.log('Removing LLM Deck from your setup');
+  if (fs.existsSync(SETTINGS)) {
+    const st = JSON.parse(fs.readFileSync(SETTINGS, 'utf8'));
+    fs.copyFileSync(SETTINGS, SETTINGS + '.before-uninstall.bak');
+    const ours = h => String(h.command || '').includes('claude-deck');
+    let removed = 0;
+    for (const ev of Object.keys(st.hooks || {})) {
+      const before = (st.hooks[ev] || []).reduce((n, g) => n + (g.hooks || []).filter(ours).length, 0);
+      st.hooks[ev] = (st.hooks[ev] || []).map(g => ({ ...g, hooks: (g.hooks || []).filter(h => !ours(h)) })).filter(g => g.hooks.length);
+      removed += before; if (!st.hooks[ev].length) delete st.hooks[ev];
+    }
+    if (st.hooks && !Object.keys(st.hooks).length) delete st.hooks;
+    say(removed + ' hooks removed from ' + SETTINGS + ' (a backup is next to it)');
+    if (ours(st.statusLine || {})) {
+      let orig = null; try { orig = JSON.parse(fs.readFileSync(path.join(DECK, 'statusline-original.json'), 'utf8')); } catch (_) {}
+      if (orig && orig.command) { st.statusLine = orig; say('your previous status line is back'); } else { delete st.statusLine; say('status line removed'); }
+    }
+    fs.writeFileSync(SETTINGS, JSON.stringify(st, null, 2));
+  }
+  if (process.platform === 'win32' && !NOSYS) {
+    const ps = "Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne " + process.pid + " -and $_.CommandLine -match '\\.claude-deck\\(server\\.js|watchdog\\.ps1|chat-watch\\.ps1|start-deck\\.vbs|edge-profile)' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+    try { execFileSync('powershell', ['-NoProfile', '-Command', ps], { stdio: 'ignore' }); } catch (_) {}
+    const lnk = "foreach ($f in [Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Desktop')) { Remove-Item (Join-Path $f 'LLM Deck.lnk') -ErrorAction SilentlyContinue }";
+    try { execFileSync('powershell', ['-NoProfile', '-Command', lnk], { stdio: 'ignore' }); } catch (_) {}
+    say('deck stopped, start-at-login and desktop shortcuts removed');
+  } else if (process.platform === 'darwin' && !NOSYS) {
+    for (const label of ['com.llmdeck.server', 'com.llmdeck.open']) {
+      try { execFileSync('launchctl', ['bootout', 'gui/' + process.getuid() + '/' + label], { stdio: 'ignore' }); } catch (_) {}
+      try { fs.unlinkSync(path.join(HOME, 'Library', 'LaunchAgents', label + '.plist')); } catch (_) {}
+    }
+    try { fs.rmSync(path.join(HOME, 'Applications', 'LLM Deck.app'), { recursive: true, force: true }); } catch (_) {}
+    say('deck stopped, login items and the LLM Deck app removed');
+  }
+  say('Kept your deck folder with its settings and backups: ' + DECK);
+  say('Delete that folder too if you want everything gone.');
+  process.exit(0);
+}
+
 console.log('Installing LLM Deck into ' + DECK);
 fs.mkdirSync(DECK, { recursive: true });
 
@@ -51,6 +92,9 @@ for (const ev of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notificati
 const perm = strip(settings.hooks.PermissionRequest);
 perm.push({ matcher: '*', hooks: [{ type: 'command', command: 'node "' + path.join(DECK, 'perm-hook.js') + '"', timeout: (cfg.permWaitSeconds || 600) + 30 }] });
 settings.hooks.PermissionRequest = perm;
+const pre = strip(settings.hooks.PreToolUse);
+pre.push({ matcher: 'AskUserQuestion', hooks: [{ type: 'command', command: 'node "' + path.join(DECK, 'question-hook.js') + '"', timeout: (cfg.questionWaitSeconds || 120) + 30 }] });
+settings.hooks.PreToolUse = pre;
 if (!settings.cleanupPeriodDays || settings.cleanupPeriodDays < 90) { settings.cleanupPeriodDays = 90; say('Claude Code now keeps session history for 90 days'); }
 // status line: records Claude's official usage limits for the deck, and keeps showing any status line you had
 if (!String((settings.statusLine || {}).command || '').includes('claude-deck')) {

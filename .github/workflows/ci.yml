@@ -45,6 +45,9 @@ jobs:
             }
             exit $bad'
 
+      - name: Unit tests
+        run: node --test test/*.test.js
+
       - name: Install into a throwaway home folder
         run: |
           export HOME="$RUNNER_TEMP/home" USERPROFILE="$RUNNER_TEMP/home"

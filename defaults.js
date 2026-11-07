@@ -20,10 +20,13 @@ module.exports = {
 
   // permissions and replies
   deckPermissions: true,
+  deckQuestions: true,         // show an agent's multiple-choice questions on the deck
+  questionWaitSeconds: 120,    // then hand the question back to the app
   permWaitSeconds: 600,
   quickReplies: ['Yes, continue', 'Go with your suggestion', 'Stop here for now'],
 
   // alerts and screen
+  updateCheck: false,          // once a day, ask GitHub whether a newer release is out (opt-in)
   usageCheck: false,           // check Claude's limits every few minutes with your Claude Code sign-in (opt-in)
   usageCheckMinutes: 5,
   alertSound: true,

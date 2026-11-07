@@ -28,7 +28,7 @@ const get = p => new Promise(res => {
 (async () => {
   section('Files');
   const runtime = ['server.js', 'hook.js', 'perm-hook.js', 'codex.js', 'extras.js', 'v3.js', 'notif.js', 'suggest.js', 'backup.js', 'defaults.js',
-    'usage-api.js', 'statusline.js', 'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
+    'usage-api.js', 'version.js', 'question-hook.js', 'statusline.js', 'platform.js', 'notif-mac.js', 'open-deck.sh', 'reply-mac.applescript', 'chat-watch.ps1', 'focus-app.ps1', 'focus-chat.ps1', 'reply.ps1', 'watchdog.ps1', 'open-deck.ps1', 'start-deck.vbs',
     'public/index.html', 'public/deck.css', 'public/deck.js', 'public/icons/llm-deck.ico', 'public/icons/llm-deck-32.png'];
   const missing = runtime.filter(f => !fs.existsSync(path.join(DECK, f)));
   ok('all program files present', !missing.length, missing.join(', '));
@@ -97,7 +97,7 @@ const get = p => new Promise(res => {
   section('Claude Code hooks');
   const set = rj(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude'), 'settings.json')) || {};
   const has = ev => ((set.hooks || {})[ev] || []).some(g => (g.hooks || []).some(h => String(h.command || '').includes('claude-deck')));
-  for (const ev of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd', 'PermissionRequest']) ok('hook ' + ev, has(ev));
+  for (const ev of ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd', 'PermissionRequest', 'PreToolUse']) ok('hook ' + ev, has(ev));
   ok('status line records official limits', String((set.statusLine || {}).command || '').includes('claude-deck'));
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

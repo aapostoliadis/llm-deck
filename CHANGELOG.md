@@ -2,6 +2,27 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
+## 1.2.0, unreleased
+
+### Added
+
+- **An agent's own options as buttons.** When Claude Code asks a multiple-choice question, the card shows its options;
+  one tap answers it. "Answer in app", or no tap within 2 minutes, hands the question back to the app's picker.
+  Questions with several parts or several picks go straight to the app. A Settings switch turns it off.
+- **`node install.js --uninstall`** removes what the installer added and restores your previous status line.
+- **Optional "new version" note.** With the setting on, the deck asks GitHub once a day and says when a newer release is
+  out. It's off by default.
+- **Unit tests** for the question hook, the limit readers, the status line and the weekly forecast, run on every change.
+
+### Changed
+
+- When a limit reading is old, the left panel says why, for example "Usage service busy; next try in 15 min".
+
+### Fixed
+
+- A permission answered in the app stayed on the deck for up to 10 minutes. It now leaves as soon as the session moves on.
+- Permission request files piled up when a prompt was answered in the app on Windows. Old ones are now cleared.
+
 ## 1.1.0, 3 November 2026
 
 ### Added

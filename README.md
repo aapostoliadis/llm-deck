@@ -51,6 +51,8 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app.
 - 💬 **Quick replies** such as "Yes, continue", typed into the right conversation for you.
 - ❓ **Why it's waiting:** a tile that needs you quotes the question the session asked, so you can judge it without opening it.
+  When Claude Code asks a multiple-choice question, its own options appear as buttons, so one tap answers it.
+  "Answer in app", or no tap within 2 minutes, hands the question back to the app.
 - 📈 **Usage limits** for Claude and Codex, with a forecast under each bar. The line turns amber, with one chime, when a limit is on track to run out before it resets.
 - 🔔 **A soft chime** when something needs you, a reminder if it waits too long, and quiet hours.
 - 🌙 **Night mode and dimming** on a schedule, with a gentle shift to protect the screen.
@@ -150,7 +152,8 @@ of the self-check.
 ## Settings
 
 Everything adjustable is in the deck's **Settings** panel: project groups, quiet hours, quick replies,
-permission buttons, the screen, phone access, backups and the self-test. Every setting and its default
+permission buttons, an agent's questions, the 5-minute limit check, the optional "new version" note (it asks GitHub
+once a day, and is off by default), the screen, phone access, backups and the self-test. Every setting and its default
 is listed in [`defaults.js`](defaults.js); your own choices are saved in `config.json` in the install folder.
 
 ## Phone access
@@ -219,10 +222,17 @@ your own computer, and for how to report a problem or propose a change, see [CON
 
 ## Uninstall
 
-Delete the LLM Deck shortcuts (on macOS: `~/Applications/LLM Deck.app` and the two `com.llmdeck` files in
-`~/Library/LaunchAgents`), remove the hook entries and the status line that mention `claude-deck` from your Claude Code
-`settings.json` (or restore the `.before-llm-deck.bak` copy next to it), and delete the
-`%USERPROFILE%\.claude-deck` folder.
+From the folder you installed from, run:
+
+```
+node install.js --uninstall
+```
+
+It removes the LLM Deck hooks and status line from your Claude Code settings (saving a backup next to them), brings
+back the status line you had before, stops the deck, and removes its shortcuts (on macOS, its login items and the
+LLM Deck app). Your deck folder, with its settings and backups, is kept: delete `%USERPROFILE%\.claude-deck` (on macOS,
+`~/.claude-deck`) too if you want everything gone. The installer also set Claude Code to keep 90 days of session
+history; that setting stays.
 
 ## License
 

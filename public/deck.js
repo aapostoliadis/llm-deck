@@ -102,7 +102,7 @@
   const tagFor = a => { const t = tags[a] || tags.claude; return '<b class="app ' + t[1] + '">' + icoFor(a) + t[0] + '</b>'; };
   const isChat = s => s.app === 'claude-chat' || s.app === 'chatgpt';
   const statusText = (s, now) => {
-    if (s.perm) return 'Wants to use ' + s.perm.tool + ', ' + ago(now - s.since);
+    if (s.perm) return (s.perm.kind === 'question' ? 'Has a question for you' : 'Wants to use ' + s.perm.tool) + ', ' + ago(now - s.since);
     if (s.state === 'failed') { const a = ago(now - s.since); return 'Failed' + (s.detail ? ': ' + s.detail : '') + (a === 'just now' ? ', just now' : ', ' + a + ' ago'); }
     if (s.state === 'ready' && s.summary) { const a = ago(now - s.since); return (a === 'just now' ? 'Ready just now' : 'Ready ' + a + ' ago') + ': ' + s.summary; }
     if (isChat(s) && s.state === 'idle') return 'No unread replies';
@@ -118,7 +118,10 @@
 
   /* ---------- v2: permissions, swipe, alerts, tidy, groups, health ---------- */
   let OLDER_H = 3, showOlder = false, swipeCard = null, swiped = false, sx = 0, sy = 0;
-  const permBlock = s => '<span class="perm"><span class="perm-sum">' + esc(s.perm.summary) + '</span>'
+  const questionBlock = s => '<span class="perm question"><span class="perm-q">' + esc(s.perm.question || s.perm.summary) + '</span><span class="qopts">'
+    + (s.perm.options || []).map(o => '<span class="qbtn" role="button" data-act="answer" data-req="' + esc(s.perm.id) + '" data-label="' + esc(o) + '">' + esc(o) + '</span>').join('')
+    + '<span class="qbtn app" role="button" data-act="ask" data-req="' + esc(s.perm.id) + '">Answer in app</span></span></span>';
+  const permBlock = s => s.perm.kind === 'question' ? questionBlock(s) : '<span class="perm"><span class="perm-sum">' + esc(s.perm.summary) + '</span>'
     + '<span class="perm-actions"><span class="pbtn allow" role="button" data-act="allow" data-req="' + esc(s.perm.id) + '">Hold to allow</span>'
     + '<span class="pbtn deny" role="button" data-act="deny" data-req="' + esc(s.perm.id) + '">Deny</span></span></span>';
 
@@ -154,11 +157,11 @@
     try { await fetch('/api/dismiss', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, key }) }); } catch (_) {}
   }
 
-  async function answerPerm(req, decision) {
+  async function answerPerm(req, decision, label) {
     if (String(req).startsWith('selftest')) { toast(decision === 'allow' ? 'Allowed' : 'Denied'); return selfTestEvent('perm'); }
-    toast(decision === 'allow' ? 'Allowed' : 'Denied');
+    toast(decision === 'answer' ? 'Answered: ' + label : decision === 'ask' ? 'Handed back to the app' : decision === 'allow' ? 'Allowed' : 'Denied');
     if (!LIVE) return;
-    try { await fetch('/api/perm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ req, decision }) }); poll(); }
+    try { await fetch('/api/perm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ req, decision, label }) }); poll(); }
     catch (_) { toast('Could not reach the LLM Deck server'); }
   }
 
@@ -322,9 +325,9 @@
     const replies = (c.quickReplies || []).slice(0, 6); while (replies.length < 4) replies.push('');
     const grpRow = (n, k) => '<div class="grp-row"><input type="text" class="g-name" value="' + esc(n) + '" placeholder="Project name"><input type="text" class="g-keys" value="' + esc(k) + '" placeholder="Keywords, separated by commas"><button type="button" class="icon-btn g-del" aria-label="Remove group">\u00d7</button></div>';
     const html = '<h3>Settings</h3><p class="sub">Changes apply as soon as you save.</p>'
-      + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sUsage"> Check Claude limits every 5 minutes with my Claude Code sign-in</label></div><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
+      + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sUsage"> Check Claude limits every 5 minutes with my Claude Code sign-in</label></div><div class="set-row"><label><input type="checkbox" id="sUpd"> Tell me when a new version is out (asks GitHub once a day)</label></div><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
       + '<div class="set-row"><span>Quiet from</span><input type="time" id="sQa"><span>to</span><input type="time" id="sQb"></div></div>'
-      + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div>'
+      + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div><div class="set-row"><label><input type="checkbox" id="sQuest"> Show an agent’s questions with its options</label></div>'
       + '<div class="set-row"><span>Wait for the deck</span><input type="number" id="sWait" min="1" max="60"><span>minutes, then ask in the app</span></div></div>'
       + '<div class="set-sec"><h4>Quick replies</h4>' + replies.map(r => '<div class="set-row"><input type="text" class="r-text" style="flex:1" maxlength="80" value="' + esc(r) + '" placeholder="Reply text"></div>').join('') + '</div>'
       + '<div class="set-sec"><h4>Background column</h4><div class="set-row"><span>Fold idle cards older than</span><input type="number" id="sOlder" min="0.5" max="72" step="0.5"><span>hours</span></div>'
@@ -342,8 +345,8 @@
       + '<div class="modal-actions"><button type="button" data-close>Cancel</button><button type="button" class="primary" id="sSave">Save</button></div>';
     openModal(html, back => {
       const q = sel => back.querySelector(sel);
-      q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sQa').value = qa; q('#sQb').value = qb;
-      q('#sPerm').checked = c.deckPermissions !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
+      q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sUpd').checked = !!c.updateCheck; q('#sQa').value = qa; q('#sQb').value = qb;
+      q('#sPerm').checked = c.deckPermissions !== false; q('#sQuest').checked = c.deckQuestions !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
       q('#sOlder').value = c.olderHours || 3; q('#sChats').value = c.chatRecents ?? 8;
       q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
       q('#sShift').checked = c.pixelShift !== false; q('#sRemote').checked = !!c.remoteAccess;
@@ -394,8 +397,8 @@
       q('#sSave').addEventListener('click', async () => {
         const num = (v, lo, hi, d) => { const n = +v; return isFinite(n) && v !== '' ? Math.max(lo, Math.min(hi, n)) : d; };
         const patch = {
-          alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
-          deckPermissions: q('#sPerm').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
+          alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, updateCheck: q('#sUpd').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
+          deckPermissions: q('#sPerm').checked, deckQuestions: q('#sQuest').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
           quickReplies: [...back.querySelectorAll('.r-text')].map(i => i.value.trim()).filter(Boolean),
           olderHours: num(q('#sOlder').value, 0.5, 72, 3), chatRecents: Math.round(num(q('#sChats').value, 0, 50, 8)),
           autoTheme: q('#sAuto').checked, dimAtNight: q('#sDim').checked, dimAfterMinutes: Math.round(num(q('#sDimMin').value, 1, 240, 10)),
@@ -444,10 +447,17 @@
     if (!ok) { if (fails >= 2 && el) { el.hidden = false; el.textContent = 'Reconnecting to the deck\u2026'; wasDown = true; } return; }
     if (wasDown) { wasDown = false; if (el) el.hidden = true; toast('Reconnected'); }
   }
+  function updateNote(v) {
+    let n = document.getElementById('updNote');
+    if (!v) { if (n) n.remove(); return; }
+    if (!n) { n = document.createElement('div'); n.id = 'updNote'; n.className = 'upd-note'; const rail = document.querySelector('.rail-actions'); if (rail) rail.parentNode.insertBefore(n, rail); else document.body.appendChild(n); }
+    n.textContent = 'LLM Deck ' + v + ' is out. To update, run git pull, then node install.js.';
+  }
+
   function applyDeck(deck) {
     DECK = deck || {}; QUICK = DECK.quickReplies || [];
     if (DECK.version) { if (pageVersion === null) pageVersion = DECK.version; else if (DECK.version !== pageVersion) { location.reload(); return; } }
-    maybeAutoDigest(); screenCare(); staleCheck();
+    maybeAutoDigest(); screenCare(); staleCheck(); updateNote(DECK.newRelease);
   }
 
   $('settingsBtn').addEventListener('click', openSettings);
@@ -674,13 +684,14 @@
 
   function renderUsage(u) {
     if (!u) return;
+    const usageWhy = () => DECK.usageError ? '. ' + String(DECK.usageError).replace(/^the usage service is turning requests away/, 'Usage service busy').replace(/^./, c => c.toUpperCase()) : '';
     const readAt = t => { const d = new Date(t), hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === new Date().toDateString() ? hm : d.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + hm; };
     const meter = (k, pct, reset, fallback, info) => {
       info = info || {};
       const r = $('r' + k), l = $('l' + k), b0 = $('b' + k);
       if (pct == null) {
         l.textContent = '\u2013'; l.classList.add('stale'); b0.style.width = '0%'; b0.className = '';
-        r.textContent = info.expired ? 'Window reset since the last reading (' + readAt(info.asOf) + ')' : 'No reading yet';
+        r.textContent = info.expired ? 'Window reset since the last reading (' + readAt(info.asOf) + ')' : 'No reading yet'; r.textContent += usageWhy();
         r.classList.remove('warn'); r.classList.add('stale'); return;
       }
       const stale = !!(info.asOf && Date.now() - info.asOf > 30 * 60e3);
@@ -690,7 +701,7 @@
       b.className = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
       $('r' + k).textContent = forecastText(pct, reset, k === '5' ? 5 : 168, fallback);
       $('r' + k).classList.toggle('warn', /^(At this pace|Full)/.test($('r' + k).textContent));
-      if (stale) { r.textContent += ' (last reading ' + readAt(info.asOf) + ')'; r.classList.remove('warn'); }
+      if (stale) { r.textContent += ' (last reading ' + readAt(info.asOf) + ')' + usageWhy(); r.classList.remove('warn'); }
     };
     meter('5', u.fiveHour.pct, u.fiveHour.resetsAt, 'No active window', u.fiveHour);
     meter('w', u.weekly.pct, u.weekly.resetsAt, 'Rolling 7 days', u.weekly);
@@ -749,7 +760,7 @@
     const grp = e.target.closest('.grp[data-g]');
     if (grp) { focusGroup = focusGroup ? null : grp.dataset.g; render(); updateFocusBar(); return; }
     const act = e.target.closest('[data-act]');
-    if (act) { e.stopPropagation(); if (act.dataset.act === 'allow') { if (!holdDone) toast('Press and hold Allow for a second'); holdDone = false; return; } answerPerm(act.dataset.req, act.dataset.act); return; }
+    if (act) { e.stopPropagation(); if (act.dataset.act === 'allow') { if (!holdDone) toast('Press and hold Allow for a second'); holdDone = false; return; } answerPerm(act.dataset.req, act.dataset.act, act.dataset.label); return; }
     if (e.target.closest('.more')) { showOlder = !showOlder; render(); return; }
     if (swiped) { swiped = false; return; }
     const card = e.target.closest('.card'); if (!card) return;

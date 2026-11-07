@@ -116,6 +116,19 @@ function refreshUsageService() {
 }
 setTimeout(refreshUsageService, 3000);
 setInterval(refreshUsageService, Math.max(1, cfg.usageCheckMinutes || 5) * 60e3);
+
+// optional: once a day, is a newer LLM Deck release out on GitHub?
+const RELEASE = require('./version.js');
+let newRelease = null, releaseCheckedAt = 0;
+const newerThan = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+function checkRelease() {
+  releaseCheckedAt = Date.now();
+  require('https').get({ host: 'api.github.com', path: '/repos/aapostoliadis/llm-deck/releases/latest', timeout: 15000, headers: { 'User-Agent': 'llm-deck', Accept: 'application/vnd.github+json' } }, res => {
+    let b = ''; res.on('data', d => (b += d));
+    res.on('end', () => { try { const tag = String(JSON.parse(b).tag_name || '').replace(/^v/, ''); newRelease = tag && newerThan(tag, RELEASE) ? tag : null; } catch (_) {} });
+  }).on('timeout', function () { this.destroy(); }).on('error', () => {});
+}
+setInterval(() => { if (!cfg.updateCheck) { newRelease = null; return; } if (Date.now() - releaseCheckedAt > 24 * 3600e3) checkRelease(); }, 60e3);
 setTimeout(refreshOfficial, 1000);
 setInterval(refreshOfficial, (cfg.officialLimitsMinutes || 15) * 60e3);
 let savedOfficial = official;
@@ -421,7 +434,7 @@ function state() {
   try { notif.apply(sessions, cfg, extras); } catch (_) {}
   extras.decorate(sessions, cfg);
   extras.dropHidden(sessions);
-  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
+  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, release: RELEASE, newRelease: cfg.updateCheck ? newRelease : null, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
 }
 
 // ---------- opening terminals ----------
@@ -626,7 +639,7 @@ http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && req.url === '/api/perm') {
       const b = await body(req);
-      extras.answer(b.req, b.decision);
+      extras.answer(b.req, b.decision, b.label);
       return send(res, 200, { ok: true });
     }
     if (req.method === 'POST' && req.url === '/api/pin') {
