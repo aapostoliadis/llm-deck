@@ -192,6 +192,7 @@ minutes when the service turns requests away. A bar always says how old its read
 | Chat cards stop updating after an app update | The left panel says so. Please open an issue with the app's version. |
 | ChatGPT cards look out of date | The deck can only read ChatGPT while its window is open; minimised is fine. |
 | A limit bar is grey and says "last reading" | The deck shows the newest official reading it has and says how old it is. Use a Claude Code session for a moment and it refreshes. |
+| "No Claude Code sign-in found" in the limit note | The 5-minute check uses the login Claude Code saves when you sign in from a terminal. Sessions in the Claude app sign in separately, so they don't save one. Run `claude` in a terminal and sign in (or type `/login`). The login expires after a few hours, and using `claude` in a terminal renews it. |
 | Something else looks wrong | Run the self-check and **Settings › Run self-test**, then open an issue with the results. |
 
 ## Automated checks
