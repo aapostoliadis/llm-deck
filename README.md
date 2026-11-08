@@ -59,6 +59,8 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 📅 **This week** shows time, sessions and finished turns per project, and warns when a weekly limit won't last until it resets, naming the day and time it would run out. **Overnight** lists what finished, ran or got stuck while you were away.
 - 🧭 **Project groups**, with suggestions based on your recent work.
 - 📱 **Phone access** on the same Wi-Fi through a private link.
+- 📱 **Phone alerts (optional)** through [ntfy](https://ntfy.sh), when a session has waited 2 minutes while you're away
+  from your computer. Off until you set a topic in Settings, which can make a private one for you and send a test.
 - 💾 **Backups**, a built-in **self-test**, and a watchdog that restarts the deck if it stops.
 
 <p align="center">
@@ -152,7 +154,7 @@ of the self-check.
 ## Settings
 
 Everything adjustable is in the deck's **Settings** panel: project groups, quiet hours, quick replies,
-permission buttons, an agent's questions, the 5-minute limit check, the optional "new version" note (it asks GitHub
+permission buttons, an agent's questions, the 5-minute limit check, phone alerts, the optional "new version" note (it asks GitHub
 once a day, and is off by default), the screen, phone access, backups and the self-test. Every setting and its default
 is listed in [`defaults.js`](defaults.js); your own choices are saved in `config.json` in the install folder.
 
@@ -180,6 +182,11 @@ the deck reads your existing Claude Code sign-in at the moment of each check and
 it never stores, logs, refreshes or copies it. The service is unofficial and allows only a few requests per account,
 shared with Claude Code, so the deck skips a check when the status line has just reported, and waits 15, 30, then 60
 minutes when the service turns requests away. A bar always says how old its reading is.
+
+**Optional phone alerts.** With a topic set in Settings, a session that has waited 2 minutes while you're away sends
+its title, project and question to the ntfy server you choose (`ntfy.sh` by default), and from there to the ntfy app
+on your phone. Nothing is sent during quiet hours or while you're using your computer. Anyone who knows the topic name
+can read its alerts, so use a hard-to-guess one: "Make a private topic" in Settings creates one.
 
 ## Troubleshooting
 

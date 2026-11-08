@@ -31,6 +31,9 @@ module.exports = {
   updateCheck: false,          // once a day, ask GitHub whether a newer release is out (opt-in)
   usageCheck: false,           // check Claude's limits every few minutes with your Claude Code sign-in (opt-in)
   usageCheckMinutes: 5,
+  alertTopic: '',              // phone alerts through ntfy (a topic name turns them on)
+  alertServer: 'https://ntfy.sh',
+  alertAfterSeconds: 120,      // alert when a session has waited this long while you're away
   alertSound: true,
   quietHours: '23:00-07:00',
   autoTheme: true,

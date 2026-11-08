@@ -2,6 +2,19 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
+## 1.3.0, 8 November 2026
+
+### Added
+
+- **Phone alerts (optional)** through ntfy, when a session has waited 2 minutes while you're away from your computer.
+  Never during quiet hours. Settings can make a private topic and send a test alert. Off by default.
+- **Sign-in expiry warning.** With the 5-minute limit check on, the deck says 30 minutes ahead when your terminal
+  sign-in for Claude Code is about to expire, and again if it has. It reads only the expiry time.
+
+### Changed
+
+- The demo animation shows a question arriving with the agent's own options and being answered with one tap.
+
 ## 1.2.0, 7 November 2026
 
 ### Added

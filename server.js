@@ -391,12 +391,47 @@ setTimeout(() => backup.autoDaily(cfg), 15000); setInterval(() => backup.autoDai
 let cache = { at: 0, files: [], usage: null };
 // things the deck should tell you about, checked at most every 30 seconds
 let problemCache = { at: 0, list: [] };
+// optional phone alerts through ntfy: a session that has waited this long, while you're away and outside quiet hours
+const alerted = new Map();
+function quietNow(spec) {
+  const m = String(spec || '').match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/); if (!m) return false;
+  const d = new Date(), now = d.getHours() * 60 + d.getMinutes(), a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4];
+  return a <= b ? now >= a && now < b : now >= a || now < b;
+}
+function sendAlert(topic, title, message, cb) {
+  try {
+    const u = new URL(String(cfg.alertServer || 'https://ntfy.sh').replace(/\/+$/, '') + '/');
+    const req = (u.protocol === 'http:' ? require('http') : require('https')).request(u, { method: 'POST', timeout: 10000, headers: { 'Content-Type': 'application/json' } }, res => { res.resume(); if (cb) cb(res.statusCode < 300); });
+    req.on('timeout', () => req.destroy(new Error('timed out'))); req.on('error', () => { if (cb) cb(false); });
+    req.end(JSON.stringify({ topic, title: String(title).slice(0, 120), message: String(message).slice(0, 300), tags: ['bell'] }));
+  } catch (_) { if (cb) cb(false); }
+}
+function phoneAlerts(sessions) {
+  if (!cfg.alertTopic) return;
+  const now = Date.now(), after = (cfg.alertAfterSeconds || 120) * 1000;
+  for (const s of sessions) {
+    if (s.state !== 'waiting') { alerted.delete(s.id); continue; }
+    const key = String(s.since || 0);
+    if (alerted.get(s.id) === key || now - (s.since || now) < after) continue;
+    alerted.set(s.id, key);
+    if (quietNow(cfg.quietHours)) continue;
+    try { const last = require('./desk.js').lastInputAt(); if (last && now - last < after) continue; } catch (_) {} // you're at your computer
+    sendAlert(cfg.alertTopic, s.title + ' needs you', (s.project ? s.project + ': ' : '') + (s.ask || s.detail || 'Waiting for you'));
+  }
+}
+
 function problems() {
   if (Date.now() - problemCache.at < 30e3) return problemCache.list;
   const list = [], u = cache.usage && cache.usage.fiveHour;
   if (cfg.officialLimits !== false) {
     if (!u || u.source !== 'claude' || !u.asOf) list.push('There is no official Claude limit reading yet' + (cfg.usageCheck ? (usageServiceError ? ': ' + usageServiceError : '') + '. Using a Claude Code session for a moment also gets one.' : '. Using a Claude Code session for a moment gets one, or turn on the 5-minute check in Settings.'));
     else if (Date.now() - u.asOf > 60 * 60e3) list.push('The Claude limit reading is ' + Math.round((Date.now() - u.asOf) / 60e3) + ' minutes old' + (usageServiceError ? ': ' + usageServiceError : '') + '.');
+  }
+  if (cfg.usageCheck && process.platform !== 'darwin') {
+    let exp = 0; try { exp = (JSON.parse(fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(require('os').homedir(), '.claude'), '.credentials.json'), 'utf8')).claudeAiOauth || {}).expiresAt || 0; } catch (_) {}
+    const at = exp ? new Date(exp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+    if (exp && exp < Date.now()) list.push('Your terminal sign-in for Claude Code has expired, so the 5-minute limit check can\u2019t run. Running claude in a terminal renews it.');
+    else if (exp && exp - Date.now() < 30 * 60e3) list.push('Your terminal sign-in for Claude Code expires at ' + at + '. Running claude in a terminal before then keeps the limits fresh.');
   }
   let set = {}; try { set = JSON.parse(fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(require('os').homedir(), '.claude'), 'settings.json'), 'utf8')); } catch (_) {}
   const ours = g => (g.hooks || []).some(h => String(h.command || '').includes('claude-deck'));
@@ -451,6 +486,7 @@ function state() {
   for (const s of sessions) if (s.app === 'claude' && (s.state === 'waiting' || s.state === 'ready')) { try { s.ask = v3.askFor(s.id); } catch (_) {} }
   try { notif.apply(sessions, cfg, extras); } catch (_) {}
   extras.decorate(sessions, cfg);
+  try { phoneAlerts(sessions); } catch (_) {}
   extras.dropHidden(sessions);
   return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, problems: problems(), release: RELEASE, newRelease: cfg.updateCheck ? newRelease : null, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
 }
@@ -659,6 +695,11 @@ http.createServer(async (req, res) => {
       const b = await body(req);
       extras.answer(b.req, b.decision, b.label);
       return send(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && req.url === '/api/alert-test') { // Settings: send one test alert to a topic
+      const b = await body(req); const topic = String((b && b.topic) || '');
+      if (!/^[\w-]{1,64}$/.test(topic)) return send(res, 400, { ok: false });
+      return sendAlert(topic, 'LLM Deck', 'Test alert: phone alerts work.', ok => send(res, ok ? 200 : 502, { ok }));
     }
     if (req.method === 'POST' && req.url === '/api/touch') { // a tap on the deck, so the hooks don't count it as desk activity
       try { fs.writeFileSync(path.join(DATA, 'touch.json'), JSON.stringify({ at: Date.now() })); } catch (_) {}

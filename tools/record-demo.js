@@ -54,6 +54,9 @@ fs.writeFileSync(path.join(DATA, 'config.json'), JSON.stringify({
   port: PORT, city: 'London', latitude: 51.51, longitude: -0.13, officialLimits: false, desktopChats: false, notifications: false,
   remoteAccess: false, alertSound: false, autoTheme: false, dimAtNight: false, pixelShift: false, groups: { 'Acme': ['acme'] }, pinnedProjects: ['/work/story-engine']
 }, null, 2));
+// a settings file with the deck's hooks and status line, so the demo doesn't flag them as missing (nothing runs them)
+fs.writeFileSync(path.join(HOME, '.claude', 'settings.json'), JSON.stringify({ statusLine: { type: 'command', command: 'node claude-deck/statusline.js' },
+  hooks: Object.fromEntries(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Notification', 'Stop', 'SessionEnd', 'PermissionRequest', 'PreToolUse'].map(ev => [ev, [{ hooks: [{ type: 'command', command: 'node claude-deck/hook.js' }] }]])) }));
 const addEvent = (e, sid, extra) => fs.appendFileSync(EVENTS, ev(Date.now(), e, sid, extra) + '\n');
 
 // ---------- 2. the deck server, pointed at the throwaway home ----------
@@ -129,8 +132,13 @@ await (async () => {
     addEvent('PostToolUse', 's-tests', { tool: 'Bash' });        // the approved session goes back to work
     await film(3000);
     addEvent('UserPromptSubmit', 's-cache'); await sleep(200);
-    addEvent('Notification', 's-cache', { msg: 'Claude needs your input' }); // a new question arrives
-    await film(3500);
+    const q = 'Should the cache live in Redis or in memory?';         // a question arrives with the agent's own options
+    fs.writeFileSync(path.join(DATA, 'perms', 'demo-q.req.json'), JSON.stringify({ id: 'demo-q', sid: 's-cache', kind: 'question', tool: 'AskUserQuestion', summary: q, question: q, options: ['Redis', 'In memory'], cwd: '/work/shop-site', t: Date.now(), wait: 120 }));
+    await film(3000);
+    const pick = await centre('.qbtn');                          // one tap answers it
+    await mouse('mousePressed', pick); await mouse('mouseReleased', pick);
+    addEvent('PostToolUse', 's-cache', { tool: 'AskUserQuestion' });
+    await film(2500);
 
     fs.mkdirSync(path.dirname(OUT), { recursive: true });
     fs.writeFileSync(OUT, writeGif(frames));

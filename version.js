@@ -1,1 +1,1 @@
-module.exports = '1.2.0'; // LLM Deck release number
+module.exports = '1.3.0'; // LLM Deck release number

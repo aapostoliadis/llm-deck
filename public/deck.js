@@ -326,7 +326,7 @@
     const grpRow = (n, k) => '<div class="grp-row"><input type="text" class="g-name" value="' + esc(n) + '" placeholder="Project name"><input type="text" class="g-keys" value="' + esc(k) + '" placeholder="Keywords, separated by commas"><button type="button" class="icon-btn g-del" aria-label="Remove group">\u00d7</button></div>';
     const html = '<h3>Settings</h3><p class="sub">Changes apply as soon as you save.</p>'
       + '<div class="set-sec"><h4>Alerts</h4><div class="set-row"><label><input type="checkbox" id="sUsage"> Check Claude limits every 5 minutes with my Claude Code sign-in</label></div><div class="set-row"><label><input type="checkbox" id="sUpd"> Tell me when a new version is out (asks GitHub once a day)</label></div><div class="set-row"><label><input type="checkbox" id="sSound"> Chime when something needs me</label></div>'
-      + '<div class="set-row"><span>Quiet from</span><input type="time" id="sQa"><span>to</span><input type="time" id="sQb"></div></div>'
+      + '<div class="set-row"><span>Quiet from</span><input type="time" id="sQa"><span>to</span><input type="time" id="sQb"></div><div class="set-row"><span>Phone alerts (ntfy topic)</span><input type="text" id="sTopic" style="flex:1;min-width:120px" maxlength="64" placeholder="Off"></div><div class="set-row"><button type="button" class="ghost" id="sTopicNew" style="flex:none;padding:0 18px">Make a private topic</button><button type="button" class="ghost" id="sTopicTest" style="flex:none;padding:0 18px">Send a test</button></div></div>'
       + '<div class="set-sec"><h4>Permission buttons</h4><div class="set-row"><label><input type="checkbox" id="sPerm"> Show Allow and Deny on the deck</label></div><div class="set-row"><label><input type="checkbox" id="sQuest"> Show an agent’s questions with its options</label></div><div class="set-row"><label><input type="checkbox" id="sDesk"> When I’m at my computer, ask me in the app instead</label></div>'
       + '<div class="set-row"><span>Wait for the deck</span><input type="number" id="sWait" min="1" max="60"><span>minutes, then ask in the app</span></div></div>'
       + '<div class="set-sec"><h4>Quick replies</h4>' + replies.map(r => '<div class="set-row"><input type="text" class="r-text" style="flex:1" maxlength="80" value="' + esc(r) + '" placeholder="Reply text"></div>').join('') + '</div>'
@@ -345,7 +345,7 @@
       + '<div class="modal-actions"><button type="button" data-close>Cancel</button><button type="button" class="primary" id="sSave">Save</button></div>';
     openModal(html, back => {
       const q = sel => back.querySelector(sel);
-      q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sUpd').checked = !!c.updateCheck; q('#sQa').value = qa; q('#sQb').value = qb;
+      q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sTopic').value = c.alertTopic || ''; q('#sUpd').checked = !!c.updateCheck; q('#sQa').value = qa; q('#sQb').value = qb;
       q('#sPerm').checked = c.deckPermissions !== false; q('#sQuest').checked = c.deckQuestions !== false; q('#sDesk').checked = c.deskAware !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
       q('#sOlder').value = c.olderHours || 3; q('#sChats').value = c.chatRecents ?? 8;
       q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
@@ -353,6 +353,11 @@
       q('#sStale').value = c.staleMinutes || 30; q('#sHiddenN').textContent = (data.hiddenCount || 0) + ' hidden';
       q('#sUnhide').addEventListener('click', async () => { try { await fetch('/api/unhide-all', { method: 'POST' }); } catch (_) {} q('#sHiddenN').textContent = '0 hidden'; toast('Hidden cards are back'); poll(); });
       q('#sSelfTest').addEventListener('click', () => { closeModal(); startSelfTest(); });
+      q('#sTopicNew').addEventListener('click', () => { const b = new Uint8Array(10); crypto.getRandomValues(b); q('#sTopic').value = 'llmdeck-' + [...b].map(x => (x % 36).toString(36)).join(''); });
+      q('#sTopicTest').addEventListener('click', async () => {
+        const t = q('#sTopic').value.trim(); if (!/^[\w-]{1,64}$/.test(t)) return toast('Enter or make a topic first');
+        try { const r = await fetch('/api/alert-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: t }) }); toast(r.ok ? 'Test alert sent' : 'Couldn\u2019t send the test alert'); } catch (_) { toast('Couldn\u2019t send the test alert'); }
+      });
       q('#sBackup').addEventListener('click', async () => {
         try {
           const j = await (await fetch('/api/backup')).json();
@@ -397,7 +402,7 @@
       q('#sSave').addEventListener('click', async () => {
         const num = (v, lo, hi, d) => { const n = +v; return isFinite(n) && v !== '' ? Math.max(lo, Math.min(hi, n)) : d; };
         const patch = {
-          alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, updateCheck: q('#sUpd').checked, quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
+          alertSound: q('#sSound').checked, usageCheck: q('#sUsage').checked, updateCheck: q('#sUpd').checked, alertTopic: q('#sTopic').value.trim(), quietHours: (q('#sQa').value || '23:00') + '-' + (q('#sQb').value || '07:00'),
           deckPermissions: q('#sPerm').checked, deckQuestions: q('#sQuest').checked, deskAware: q('#sDesk').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
           quickReplies: [...back.querySelectorAll('.r-text')].map(i => i.value.trim()).filter(Boolean),
           olderHours: num(q('#sOlder').value, 0.5, 72, 3), chatRecents: Math.round(num(q('#sChats').value, 0, 50, 8)),
