@@ -2,6 +2,15 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
+## 1.4.0, 8 November 2026
+
+### Added
+
+- **Codex approvals on the deck.** `node install.js --codex` adds a hook to `~/.codex/hooks.json`, and Codex approval
+  requests then show on the Codex card with Allow and Deny, following the same rules as Claude Code: risky commands and
+  requests while you're at your computer go straight to Codex. `--uninstall` removes the hook again, leaving any other
+  Codex hooks in place.
+
 ## 1.3.0, 8 November 2026
 
 ### Added

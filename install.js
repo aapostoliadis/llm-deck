@@ -36,6 +36,13 @@ if (process.argv.includes('--uninstall')) {
     }
     fs.writeFileSync(SETTINGS, JSON.stringify(st, null, 2));
   }
+  const CXH = path.join(HOME, '.codex', 'hooks.json');
+  if (fs.existsSync(CXH)) {
+    try {
+      const r = require('./codex-hook.js').remove(JSON.parse(fs.readFileSync(CXH, 'utf8')));
+      if (r.removed) { if (r.cfg.hooks) fs.writeFileSync(CXH, JSON.stringify(r.cfg, null, 2)); else fs.unlinkSync(CXH); say('Codex approval hook removed'); }
+    } catch (_) {}
+  }
   if (process.platform === 'win32' && !NOSYS) {
     const ps = "Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne " + process.pid + " -and $_.CommandLine -match '\\.claude-deck\\(server\\.js|watchdog\\.ps1|chat-watch\\.ps1|start-deck\\.vbs|edge-profile)' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
     try { execFileSync('powershell', ['-NoProfile', '-Command', ps], { stdio: 'ignore' }); } catch (_) {}
@@ -104,6 +111,19 @@ if (!String((settings.statusLine || {}).command || '').includes('claude-deck')) 
 }
 fs.writeFileSync(SETTINGS, JSON.stringify(settings, null, 2));
 say('Claude Code hooks registered in ' + SETTINGS);
+
+// node install.js --codex: Codex approvals on the deck too (adds one hook to ~/.codex/hooks.json)
+if (process.argv.includes('--codex')) {
+  const CXH = path.join(HOME, '.codex', 'hooks.json');
+  let cx = {}, ok = true;
+  if (fs.existsSync(CXH)) { try { cx = JSON.parse(fs.readFileSync(CXH, 'utf8')); fs.copyFileSync(CXH, CXH + '.before-llm-deck.bak'); } catch (_) { ok = false; } }
+  if (ok) {
+    fs.mkdirSync(path.dirname(CXH), { recursive: true });
+    const wait = (cfg.permWaitSeconds || 600) + 60;
+    fs.writeFileSync(CXH, JSON.stringify(require('./codex-hook.js').add(cx, 'node "' + path.join(DECK, 'perm-hook.js') + '" --codex', wait), null, 2));
+    say('Codex approvals: hook added to ' + CXH + ' (Codex may ask you to trust it once)');
+  } else say('Codex approvals: ' + CXH + ' could not be read, so it was left alone');
+}
 
 // 4. Windows: desktop and start-at-login shortcuts with the LLM Deck icon
 if (process.platform === 'win32' && !NOSYS) {

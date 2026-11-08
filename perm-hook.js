@@ -9,6 +9,7 @@ const crypto = require('crypto');
 
 const DECK = path.join(os.homedir(), '.claude-deck');
 const DIR = path.join(DECK, 'perms');
+const CODEX = process.argv.includes('--codex'); // registered in ~/.codex/hooks.json for Codex approvals
 const RISKY = /(\brm\b|\brmdir\b|\bdel\b|\berase\b|Remove-Item|\brd\b|\bformat\b|\bmkfs|\bdd\b|\bshred\b|\btruncate\b|\bdrop\s+(table|database)|git\s+push|git\s+reset\s+--hard|git\s+clean|git\s+branch\s+-D|--force|\bnpm\s+publish|\bsudo\b|chmod\s+-R|\bchown\b|curl[^|\n]*\|\s*(sh|bash)|iwr[^|\n]*\|\s*iex|Invoke-Expression|\bshutdown\b|Stop-Computer|reg\s+delete|Set-ExecutionPolicy|Clear-RecycleBin)/i;
 
 function out(decision) {
@@ -32,8 +33,8 @@ function main() {
   const tool = String(p.tool_name || '');
   if (tool === 'AskUserQuestion') return out(); // questions are handled by question-hook.js
   const inp = p.tool_input || {};
-  const cmd = String(inp.command || '');
-  let summary = cmd || (inp.file_path && path.basename(String(inp.file_path))) || inp.url || inp.path || inp.pattern || Object.keys(inp).slice(0, 3).join(', ');
+  const cmd = Array.isArray(inp.command) ? inp.command.join(' ') : String(inp.command || '');
+  let summary = cmd || (inp.file_path && path.basename(String(inp.file_path))) || inp.url || inp.path || inp.pattern || inp.description || Object.keys(inp).slice(0, 3).join(', ');
   summary = String(summary || '').replace(/\s+/g, ' ').slice(0, 160);
   const risky = RISKY.test(cmd) || /delete|remove|trash|send|publish|deploy|purchase|pay|transfer|share/i.test(tool);
   if (process.env.LLM_DECK_PERM_SELFTEST) { process.stdout.write(risky ? 'risky' : 'safe'); process.exit(0); }
@@ -45,7 +46,7 @@ function main() {
   const wait = cfg.permWaitSeconds || 300;
   const req = path.join(DIR, id + '.req.json');
   const ans = path.join(DIR, id + '.ans.json');
-  fs.writeFileSync(req, JSON.stringify({ id, sid: p.session_id, tool, summary, cwd: p.cwd || '', t: Date.now(), wait }));
+  fs.writeFileSync(req, JSON.stringify({ id, sid: (CODEX ? 'codex:' : '') + p.session_id, tool, summary, cwd: p.cwd || '', t: Date.now(), wait }));
   const cleanup = () => { for (const f of [req, ans]) { try { fs.unlinkSync(f); } catch (_) {} } };
   process.on('SIGTERM', () => { cleanup(); process.exit(0); });
   process.on('SIGINT', () => { cleanup(); process.exit(0); });

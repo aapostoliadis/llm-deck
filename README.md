@@ -107,6 +107,19 @@ On Windows it creates **LLM Deck** shortcuts on the desktop and in Startup; on m
 
 To update, pull the latest version and run `node install.js` again. Your settings are kept. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
+### Codex approvals
+
+To see Codex approval requests on the deck too, with Allow and Deny, run:
+
+```
+node install.js --codex
+```
+
+It adds one hook to `~/.codex/hooks.json`, keeping any hooks you already have, and Codex may ask you to trust it the
+first time. Codex decides for itself when to ask for approval, and on Windows its sandbox often lets commands run
+without asking, so Codex cards show Allow and Deny only when it does ask. As with Claude Code, risky commands and any
+request while you're at your computer go straight to Codex.
+
 ### On macOS
 
 Two features need a permission that only you can grant. Open **System Settings › Privacy & Security** and add
@@ -236,7 +249,8 @@ From the folder you installed from, run:
 node install.js --uninstall
 ```
 
-It removes the LLM Deck hooks and status line from your Claude Code settings (saving a backup next to them), brings
+It removes the LLM Deck hooks and status line from your Claude Code settings and the Codex approval hook if you
+added one (saving a backup next to them), brings
 back the status line you had before, stops the deck, and removes its shortcuts (on macOS, its login items and the
 LLM Deck app). Your deck folder, with its settings and backups, is kept: delete `%USERPROFILE%\.claude-deck` (on macOS,
 `~/.claude-deck`) too if you want everything gone. The installer also set Claude Code to keep 90 days of session
