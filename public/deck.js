@@ -337,7 +337,7 @@
       + '<div class="set-row"><button type="button" class="ghost" id="sAddGroup" style="flex:none;padding:0 18px">Add a group</button> <button type="button" class="ghost" id="sSuggest" style="flex:none;padding:0 18px">Suggest groups</button></div></div>'
       + '<div class="set-sec"><h4>Screen</h4><div class="set-row"><label><input type="checkbox" id="sAuto"> Night mode during quiet hours</label></div>'
       + '<div class="set-row"><label><input type="checkbox" id="sDim"> Dim during quiet hours after</label><input type="number" id="sDimMin" min="1" max="240"><span>minutes without a tap</span></div>'
-      + '<div class="set-row"><label><input type="checkbox" id="sShift"> Shift the layout slightly over time</label></div></div>'
+      + '<div class="set-row"><label><input type="checkbox" id="sShift"> Shift the layout slightly over time</label></div><div class="set-row"><label><input type="checkbox" id="sWeather"> Show the weather</label></div></div>'
       + '<div class="set-sec"><h4>Reminders and cleanup</h4><div class="set-row"><span>Remind me again after</span><input type="number" id="sStale" min="5" max="240"><span>minutes of waiting</span></div>'
       + '<div class="set-row"><button type="button" class="ghost" id="sUnhide" style="flex:none;padding:0 18px">Show hidden cards again</button><span id="sHiddenN" class="sub" style="margin:0"></span></div>'
       + '<div class="set-row"><button type="button" class="ghost" id="sSelfTest" style="flex:none;padding:0 18px">Run self-test</button></div></div>'
@@ -349,7 +349,7 @@
       q('#sSound').checked = c.alertSound !== false; q('#sUsage').checked = !!c.usageCheck; q('#sTopic').value = c.alertTopic || ''; q('#sUpd').checked = !!c.updateCheck; q('#sQa').value = qa; q('#sQb').value = qb;
       q('#sPerm').checked = c.deckPermissions !== false; q('#sQuest').checked = c.deckQuestions !== false; q('#sDesk').checked = c.deskAware !== false; q('#sWait').value = Math.round((c.permWaitSeconds || 600) / 60);
       q('#sOlder').value = c.olderHours || 3; q('#sChats').value = c.chatRecents ?? 8;
-      q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
+      q('#sAuto').checked = c.autoTheme !== false; q('#sDim').checked = c.dimAtNight !== false; q('#sWeather').checked = c.showWeather !== false; q('#sDimMin').value = c.dimAfterMinutes || 10;
       q('#sShift').checked = c.pixelShift !== false; q('#sRemote').checked = !!c.remoteAccess;
       q('#sStale').value = c.staleMinutes || 30; q('#sHiddenN').textContent = (data.hiddenCount || 0) + ' hidden';
       q('#sUnhide').addEventListener('click', async () => { try { await fetch('/api/unhide-all', { method: 'POST' }); } catch (_) {} q('#sHiddenN').textContent = '0 hidden'; toast('Hidden cards are back'); poll(); });
@@ -407,7 +407,7 @@
           deckPermissions: q('#sPerm').checked, deckQuestions: q('#sQuest').checked, deskAware: q('#sDesk').checked, permWaitSeconds: Math.round(num(q('#sWait').value, 1, 60, 10)) * 60,
           quickReplies: [...back.querySelectorAll('.r-text')].map(i => i.value.trim()).filter(Boolean),
           olderHours: num(q('#sOlder').value, 0.5, 72, 3), chatRecents: Math.round(num(q('#sChats').value, 0, 50, 8)),
-          autoTheme: q('#sAuto').checked, dimAtNight: q('#sDim').checked, dimAfterMinutes: Math.round(num(q('#sDimMin').value, 1, 240, 10)),
+          autoTheme: q('#sAuto').checked, dimAtNight: q('#sDim').checked, showWeather: q('#sWeather').checked, dimAfterMinutes: Math.round(num(q('#sDimMin').value, 1, 240, 10)),
           pixelShift: q('#sShift').checked, remoteAccess: q('#sRemote').checked, staleMinutes: Math.round(num(q('#sStale').value, 5, 240, 30)), groups: {}
         };
         back.querySelectorAll('.grp-row').forEach(r => {
@@ -480,6 +480,7 @@
   function applyDeck(deck) {
     DECK = deck || {}; QUICK = DECK.quickReplies || [];
     if (DECK.version) { if (pageVersion === null) pageVersion = DECK.version; else if (DECK.version !== pageVersion) { location.reload(); return; } }
+    { const w = document.querySelector('.weather'); if (w) w.style.display = DECK.showWeather === false ? 'none' : ''; }
     maybeAutoDigest(); screenCare(); staleCheck(); updateNote(DECK.newRelease); problemNote(DECK.problems);
   }
 
@@ -835,6 +836,7 @@
   /* ---------- weather ---------- */
   const codes = { 0: 'clear', 1: 'mostly clear', 2: 'partly cloudy', 3: 'overcast', 45: 'fog', 48: 'fog', 51: 'drizzle', 53: 'drizzle', 55: 'drizzle', 61: 'rain', 63: 'rain', 65: 'heavy rain', 71: 'snow', 73: 'snow', 75: 'snow', 80: 'showers', 81: 'showers', 82: 'showers', 95: 'thunderstorm' };
   async function weather(cfg) {
+    if (DECK.showWeather === false) return; // hidden in Settings: no request either
     try {
       const u = `https://api.open-meteo.com/v1/forecast?latitude=${cfg.latitude}&longitude=${cfg.longitude}&current=temperature_2m,weather_code`;
       const d = await (await fetch(u)).json();
@@ -849,7 +851,7 @@
     try {
       const d = await (await fetch('/api/state', { cache: 'no-store' })).json();
       connState(true); fails = 0; sessions = d.sessions.concat(testCards); applyDeck(d.deck || {}); const sig = JSON.stringify(sessions); if (sig !== lastSig) { lastSig = sig; render(); } renderUsage(d.usage); window.__appUpdates = d.appUpdates || {}; renderHealth(d.health || {}); alertCheck(d.deck || {});
-      if (!weatherStarted && d.config) { weatherStarted = true; weather(d.config); setInterval(() => weather(d.config), 10 * M); }
+      if (!weatherStarted && d.config && !(d.deck && d.deck.showWeather === false)) { weatherStarted = true; weather(d.config); setInterval(() => weather(d.config), 10 * M); }
     } catch (_) { fails++; connState(false); }
   }
 

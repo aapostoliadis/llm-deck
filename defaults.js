@@ -36,6 +36,7 @@ module.exports = {
   alertAfterSeconds: 120,      // alert when a session has waited this long while you're away
   alertSound: true,
   quietHours: '23:00-07:00',
+  showWeather: true,          // the weather line on the left panel (asks open-meteo.com every 10 minutes)
   autoTheme: true,
   dimAtNight: true,
   dimAfterMinutes: 10,
