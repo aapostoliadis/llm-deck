@@ -2,6 +2,14 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
+## 1.5.0, unreleased
+
+### Changed
+
+- The left panel shows each app's icon next to its limits, and Codex cards and limits use the Codex app's own icon
+  instead of ChatGPT's. The installer copies it from your installed Codex app on Windows. A Codex 5-hour limit shows
+  there too whenever Codex reports one.
+
 ## 1.4.0, 8 November 2026
 
 ### Added

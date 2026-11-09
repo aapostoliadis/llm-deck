@@ -133,6 +133,8 @@ if (process.platform === 'win32' && !NOSYS) {
     "if ($c) { $f = Join-Path $c.InstallLocation 'Assets\\Square44x44Logo.targetsize-96.png'; if (Test-Path $f) { Copy-Item $f (Join-Path $icons 'claude.png') -Force } }",
     "$g = Get-AppxPackage -Name OpenAI.ChatGPT-Desktop | Select-Object -First 1",
     "if ($g) { foreach ($p in @(@('AppList.targetsize-96_altform-unplated.png', 'chatgpt-dark.png'), @('AppList.targetsize-96_altform-lightunplated.png', 'chatgpt-light.png'))) { $f = Join-Path $g.InstallLocation ('assets\\' + $p[0]); if (Test-Path $f) { Copy-Item $f (Join-Path $icons $p[1]) -Force } } }",
+    "$x = Get-AppxPackage -Name OpenAI.Codex | Select-Object -First 1",
+    "if ($x) { foreach ($p in @(@('Square44x44Logo.targetsize-96_altform-unplated.png', 'codex-dark.png'), @('Square44x44Logo.targetsize-96_altform-lightunplated.png', 'codex-light.png'))) { $f = Join-Path $x.InstallLocation ('assets\\' + $p[0]); if (Test-Path $f) { Copy-Item $f (Join-Path $icons $p[1]) -Force } } }",
     "$ws = New-Object -ComObject WScript.Shell",
     "foreach ($folder in [Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Desktop')) {",
     "  $old = Join-Path $folder 'Claude Deck.lnk'; $new = Join-Path $folder 'LLM Deck.lnk'",

@@ -279,3 +279,6 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 .upd-note { margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); color: var(--ink); font-size: 12px; line-height: 1.35; }
 /* something needs attention */
 .upd-note.warn { border: 1px solid color-mix(in srgb, var(--waiting) 55%, var(--line)); cursor: pointer; }
+/* app icons next to the limits */
+.meter-head span { display: inline-flex; align-items: center; gap: 7px; }
+.meter-head .app-ico { width: 16px; height: 16px; flex: none; }

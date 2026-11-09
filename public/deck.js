@@ -96,8 +96,9 @@
   const pinIcon = '<svg class="pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 1 5-2 1-4-4-5 5-1-1 5-5-4-4 1-2 5 1 4-4z"/></svg>';
 
   const tags = { codex: ['Codex', 'codex'], chatgpt: ['ChatGPT', 'chatgpt'], 'claude-chat': ['Claude chat', 'claude-chat'], claude: ['Claude Code', ''] };
-  const icoFor = a => (a === 'chatgpt' || a === 'codex')
-    ? '<img class="app-ico on-light" src="/icons/chatgpt-light.png" alt="" onerror="this.remove()"><img class="app-ico on-dark" src="/icons/chatgpt-dark.png" alt="" onerror="this.remove()">'
+  // app icons are copied from your installed apps by the installer; a missing one is simply left out
+  const icoPair = n => '<img class="app-ico on-light" src="/icons/' + n + '-light.png" alt="" onerror="this.remove()"><img class="app-ico on-dark" src="/icons/' + n + '-dark.png" alt="" onerror="this.remove()">';
+  const icoFor = a => a === 'codex' ? icoPair('codex') : a === 'chatgpt' ? icoPair('chatgpt')
     : '<img class="app-ico" src="/icons/claude.png" alt="" onerror="this.remove()">';
   const tagFor = a => { const t = tags[a] || tags.claude; return '<b class="app ' + t[1] + '">' + icoFor(a) + t[0] + '</b>'; };
   const isChat = s => s.app === 'claude-chat' || s.app === 'chatgpt';
@@ -729,7 +730,7 @@
     meter('w', u.weekly.pct, u.weekly.resetsAt, 'Rolling 7 days', u.weekly);
     $('extraLimits').innerHTML = (u.extra || []).map(x => {
       const pct = Math.round(x.pct), cls = pct >= 90 ? 'max' : pct >= 70 ? 'hot' : '';
-      return `<div class="meter"><div class="meter-head"><span>${esc(x.label)}</span><strong>${pct}%</strong></div><div class="bar"><i class="${cls}" style="width:${Math.max(2, pct)}%"></i></div><small class="${/^(At this pace|Full)/.test(forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')) ? 'warn' : ''}">${forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')}</small></div>`;
+      return `<div class="meter"><div class="meter-head"><span>${/^Codex/.test(x.label) ? icoFor('codex') : ''}${esc(x.label)}</span><strong>${pct}%</strong></div><div class="bar"><i class="${cls}" style="width:${Math.max(2, pct)}%"></i></div><small class="${/^(At this pace|Full)/.test(forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')) ? 'warn' : ''}">${forecastText(x.pct, x.resetsAt, /5-hour/.test(x.label) ? 5 : 168, '')}</small></div>`;
     }).join('');
     try { // one chime the first time a weekly limit is on track to run out
       const outs = [weeklyOutlook('Claude', u.weekly && u.weekly.pct, u.weekly && u.weekly.resetsAt)]

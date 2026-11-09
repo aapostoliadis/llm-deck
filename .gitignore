@@ -10,3 +10,4 @@ node_modules/
 # official app icons are copied from the user's own installed apps at install time
 public/icons/claude.png
 public/icons/chatgpt-*.png
+public/icons/codex-*.png
