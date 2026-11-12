@@ -290,3 +290,5 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 .upd-bar i.indeterminate { width: 40%; position: absolute; left: 0; animation: updSlide 1.2s ease-in-out infinite; }
 @keyframes updSlide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .upd-label { margin-top: 6px; color: var(--ink-2); }
+/* the credit under the version: a link, so easy to tap */
+.ver a.credit { display: inline-block; margin-top: 4px; padding: 2px 8px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }

@@ -8,6 +8,7 @@ All notable changes to LLM Deck, newest first. Versions follow [semantic version
 
 - **Progress while updating.** Tapping **Update now** shows a bar with each step: downloading (with a percentage), unpacking, checking the release, installing and restarting. The deck reloads itself when the new version is running.
 - **The version on the left panel.** The deck's version number sits at the bottom of the left panel.
+- **Crafted by XD.** The left panel's version line has a "Crafted by XD" link to xperiencedsign.com, which opens when you tap it.
 
 ## 1.5.1, 12 November 2026
 

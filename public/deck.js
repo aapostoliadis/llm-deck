@@ -460,7 +460,11 @@
   // the update note: "Update now", a progress bar while the update runs, and a message if it fails
   const UPD_STEP = { starting: 'Starting', download: 'Downloading', unpack: 'Unpacking', check: 'Checking the release', install: 'Installing', restart: 'Restarting' };
   function updateNote(v) {
-    const ver = document.getElementById('ver'); if (ver && DECK.release) ver.textContent = 'LLM Deck ' + DECK.release;
+    const ver = document.getElementById('ver');
+    if (ver && DECK.release && ver.dataset.v !== DECK.release) { // written once per version, so a tap on the link is not lost
+      ver.dataset.v = DECK.release;
+      ver.innerHTML = 'LLM Deck ' + esc(DECK.release) + '<br><a class="credit" href="https://xperiencedsign.com" target="_blank" rel="noopener">Crafted by XD</a>';
+    }
     let n = document.getElementById('updNote');
     const st = DECK.updateState || {};
     if (!v && !st.running && !st.failed && !st.done) { if (n) n.remove(); return; }
