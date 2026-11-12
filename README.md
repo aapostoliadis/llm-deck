@@ -48,12 +48,12 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 🗂️ **Four columns**: Pinned, Waiting for you, New result and Background, grouped by project.
 - 👆 **One tap** opens that exact session, chat or thread in its own app.
 - 👀 **Double-tap** a Claude Code or Codex card to read its last reply without switching windows.
-- ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app.
+- ✅ **Hold to allow, tap to deny** safe permission requests right on the card. Allow needs a one-second press, so a stray tap can't approve anything. Risky requests (deletes, pushes, sending, publishing) always go to the app. Codex approvals too, with `node install.js --codex` (see [Codex approvals](#codex-approvals)).
 - 💬 **Quick replies** such as "Yes, continue", typed into the right conversation for you.
 - ❓ **Why it's waiting:** a tile that needs you quotes the question the session asked, so you can judge it without opening it.
   When Claude Code asks a multiple-choice question, its own options appear as buttons, so one tap answers it.
   "Answer in app", or no tap within 2 minutes, hands the question back to the app.
-- 📈 **Usage limits** for Claude and Codex, with a forecast under each bar. The line turns amber, with one chime, when a limit is on track to run out before it resets.
+- 📈 **Usage limits** for Claude and Codex, with a forecast under each bar. The line turns amber, with one chime, when a limit is on track to run out before it resets. Each bar carries its app's icon.
 - 🔔 **A soft chime** when something needs you, a reminder if it waits too long, and quiet hours.
 - 🌙 **Night mode and dimming** on a schedule, with a gentle shift to protect the screen.
 - 📅 **This week** shows time, sessions and finished turns per project, and warns when a weekly limit won't last until it resets, naming the day and time it would run out. **Overnight** lists what finished, ran or got stuck while you were away.
@@ -61,6 +61,10 @@ one glance shows what every session is doing, and one tap takes you straight to 
 - 📱 **Phone access** on the same Wi-Fi through a private link.
 - 📱 **Phone alerts (optional)** through [ntfy](https://ntfy.sh), when a session has waited 2 minutes while you're away
   from your computer. Off until you set a topic in Settings, which can make a private one for you and send a test.
+- ⬆️ **Updates from the left panel:** when a new version is out, **Update now** downloads it, installs it and restarts
+  the deck, keeping your settings.
+- 🩺 **Needs attention:** a short note on the left panel says when something is wrong, such as an old limit reading or
+  missing hooks, and tapping it explains what to do.
 - 💾 **Backups**, a built-in **self-test**, and a watchdog that restarts the deck if it stops.
 
 <p align="center">
@@ -170,7 +174,7 @@ of the self-check.
 
 Everything adjustable is in the deck's **Settings** panel: project groups, quiet hours, quick replies,
 permission buttons, an agent's questions, the 5-minute limit check, phone alerts, the optional "new version" note (it asks GitHub
-once a day, and is off by default), the screen, phone access, backups and the self-test. Every setting and its default
+once a day, and is off by default), the screen (including the weather), phone access, backups, updates and the self-test. Every setting and its default
 is listed in [`defaults.js`](defaults.js); your own choices are saved in `config.json` in the install folder.
 
 ## Phone access
@@ -188,7 +192,7 @@ local thread records, the sidebars of the Claude and ChatGPT desktop apps throug
 and the notifications those apps send to Windows or macOS. Your official usage limits come from the data Claude Code
 gives status line scripts, recorded by a small LLM Deck status line that prints nothing (or shows the status
 line you had before), with `/usage` as a backup. Nothing is sent anywhere; the only outside requests
-are the weather ([Open-Meteo](https://open-meteo.com)) and the dashboard's fonts. Backups never include
+are the weather ([Open-Meteo](https://open-meteo.com), unless you turn off **Show the weather** in Settings) and the dashboard's fonts. Backups never include
 the private phone link.
 
 **Optional 5-minute limit check.** In Settings, "Check Claude limits every 5 minutes with my Claude Code sign-in"
