@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="900" alt="LLM Deck in action: a session finishes and moves to New result, a permission request is approved with a one-second hold, and a question arrives with the agent's own options and one tap answers it">
+  <img src="docs/demo.gif?v=1.6.0" width="900" alt="LLM Deck in action: a session finishes and moves to New result, a permission request is approved with a one-second hold, and a question arrives with the agent's own options and one tap answers it">
 </p>
 
 ## Why
@@ -69,8 +69,8 @@ one glance shows what every session is doing, and one tap takes you straight to 
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
-    <img src="docs/screenshot-light.png" width="900" alt="LLM Deck showing pinned, waiting, new result and background cards with mascots">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png?v=1.6.0">
+    <img src="docs/screenshot-light.png?v=1.6.0" width="900" alt="LLM Deck showing pinned, waiting, new result and background cards with mascots">
   </picture>
 </p>
 
