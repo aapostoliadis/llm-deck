@@ -457,24 +457,38 @@
     if (!ok) { if (fails >= 2 && el) { el.hidden = false; el.textContent = 'Reconnecting to the deck\u2026'; wasDown = true; } return; }
     if (wasDown) { wasDown = false; if (el) el.hidden = true; toast('Reconnected'); }
   }
+  // the update note: "Update now", a progress bar while the update runs, and a message if it fails
+  const UPD_STEP = { starting: 'Starting', download: 'Downloading', unpack: 'Unpacking', check: 'Checking the release', install: 'Installing', restart: 'Restarting' };
   function updateNote(v) {
+    const ver = document.getElementById('ver'); if (ver && DECK.release) ver.textContent = 'LLM Deck ' + DECK.release;
     let n = document.getElementById('updNote');
     const st = DECK.updateState || {};
-    if (!v && !st.running && !st.failed) { if (n) n.remove(); return; }
+    if (!v && !st.running && !st.failed && !st.done) { if (n) n.remove(); return; }
     if (!n) { n = document.createElement('div'); n.id = 'updNote'; n.className = 'upd-note'; const rail = document.querySelector('.rail-actions'); if (rail) rail.parentNode.insertBefore(n, rail); else document.body.appendChild(n); }
+    if (st.running || st.done) {
+      const target = st.running || st.done, step = st.done ? 'restart' : (st.phase || 'starting');
+      const pct = st.done ? 100 : (typeof st.percent === 'number' ? st.percent : null);
+      if (n.dataset.key !== 'run') { n.dataset.key = 'run'; n.innerHTML = '<div class="upd-title"></div><div class="upd-bar" role="progressbar"><i></i></div><div class="upd-label"></div>'; }
+      n.querySelector('.upd-title').textContent = 'Updating to LLM Deck ' + target;
+      const bar = n.querySelector('.upd-bar i');
+      bar.classList.toggle('indeterminate', pct === null);
+      bar.style.width = pct === null ? '' : pct + '%';
+      const soFar = step === 'download' ? (pct !== null ? ' ' + pct + '%' : st.bytes ? ' ' + Math.round(st.bytes / 1024) + ' KB' : '') : '';
+      n.querySelector('.upd-label').textContent = st.done ? 'Installed. Restarting the deck…' : (UPD_STEP[step] || 'Updating') + soFar + '…';
+      return;
+    }
     const here = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
-    const btn = label => here ? ' <button type="button" class="ghost" id="updNow" style="margin-top:6px;padding:0 14px">' + label + '</button>' : ' Update it from the deck\u2019s own screen.';
-    const key = st.running ? 'run:' + st.running : st.failed ? 'fail:' + st.failed : 'new:' + v;
+    const btn = label => here ? ' <button type="button" class="ghost" id="updNow" style="margin-top:6px;padding:0 14px">' + label + '</button>' : ' Update it from the deck’s own screen.';
+    const key = st.failed ? 'fail:' + st.failed : 'new:' + v;
     if (n.dataset.key === key) return;
     n.dataset.key = key;
-    if (st.running) n.textContent = 'Updating to LLM Deck ' + st.running + '. The deck restarts in a moment.';
-    else if (st.failed) n.innerHTML = 'The update didn\u2019t finish: ' + esc(st.failed) + '. This version keeps running.' + (v ? btn('Try again') : '');
+    if (st.failed) n.innerHTML = 'The update didn’t finish: ' + esc(st.failed) + '. This version keeps running.' + (v ? btn('Try again') : '');
     else n.innerHTML = 'LLM Deck ' + esc(v) + ' is out.' + btn('Update now');
     const b = document.getElementById('updNow');
     if (b) b.addEventListener('click', async e => {
-      e.stopPropagation(); const label = b.textContent; b.disabled = true; b.textContent = 'Starting\u2026';
-      try { const r = await (await fetch('/api/update', { method: 'POST' })).json(); if (!r.ok) { toast(r.error || 'The update couldn\u2019t start'); b.disabled = false; b.textContent = label; } else poll(); }
-      catch (_) { toast('The update couldn\u2019t start'); b.disabled = false; b.textContent = label; }
+      e.stopPropagation(); const label = b.textContent; b.disabled = true; b.textContent = 'Starting…';
+      try { const r = await (await fetch('/api/update', { method: 'POST' })).json(); if (!r.ok) { toast(r.error || 'The update couldn’t start'); b.disabled = false; b.textContent = label; } else poll(); }
+      catch (_) { toast('The update couldn’t start'); b.disabled = false; b.textContent = label; }
     });
   }
 
@@ -870,7 +884,7 @@
       const d = await (await fetch('/api/state', { cache: 'no-store' })).json();
       connState(true); fails = 0; sessions = d.sessions.concat(testCards); applyDeck(d.deck || {}); const sig = JSON.stringify(sessions); if (sig !== lastSig) { lastSig = sig; render(); } renderUsage(d.usage); window.__appUpdates = d.appUpdates || {}; renderHealth(d.health || {}); alertCheck(d.deck || {});
       if (!weatherStarted && d.config && !(d.deck && d.deck.showWeather === false)) { weatherStarted = true; weather(d.config); setInterval(() => weather(d.config), 10 * M); }
-    } catch (_) { fails++; connState(false); }
+    } catch (_) { fails++; connState(false); const sl = document.querySelector('#updNote .upd-label'); if (sl && DECK.updateState && (DECK.updateState.running || DECK.updateState.done)) sl.textContent = 'Restarting the deck…'; }
   }
 
   function demo() {

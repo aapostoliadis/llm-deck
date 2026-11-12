@@ -2,6 +2,13 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
+## 1.6.0, unreleased
+
+### Added
+
+- **Progress while updating.** Tapping **Update now** shows a bar with each step: downloading (with a percentage), unpacking, checking the release, installing and restarting. The deck reloads itself when the new version is running.
+- **The version on the left panel.** The deck's version number sits at the bottom of the left panel.
+
 ## 1.5.1, 12 November 2026
 
 ### Fixed

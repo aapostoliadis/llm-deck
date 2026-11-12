@@ -1,4 +1,4 @@
-// The updater: which download it asks for, and whether it keeps the Codex hook.
+// The updater: which download it asks for, whether it keeps the Codex hook, and what it refuses.
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -21,6 +21,11 @@ test('keeps the Codex hook only when it was installed', () => {
   } finally { [process.env.HOME, process.env.USERPROFILE] = before; }
 });
 
-test('refuses anything that is not a release version', (t, done) => {
-  run('../../etc', err => { assert.match(err.message, /not a release version/); done(); });
+test('refuses anything that is not a release version, before reporting any progress', (t, done) => {
+  const steps = [];
+  run('../../etc', p => steps.push(p.phase), err => {
+    assert.match(err.message, /not a release version/);
+    assert.deepEqual(steps, []);
+    done();
+  });
 });

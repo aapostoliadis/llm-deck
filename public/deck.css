@@ -282,3 +282,11 @@ body.dimmed .mascot, body.dimmed .mascot * { animation-play-state: paused !impor
 /* app icons next to the limits */
 .meter-head span { display: inline-flex; align-items: center; gap: 7px; }
 .meter-head .app-ico { width: 16px; height: 16px; flex: none; }
+/* the update: version line, and the progress bar while it runs */
+.ver { margin-top: 8px; font-size: 12px; color: var(--ink-2); text-align: center; }
+.upd-title { font-weight: 600; margin-bottom: 6px; }
+.upd-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; position: relative; }
+.upd-bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--ready); transition: width .4s linear; }
+.upd-bar i.indeterminate { width: 40%; position: absolute; left: 0; animation: updSlide 1.2s ease-in-out infinite; }
+@keyframes updSlide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.upd-label { margin-top: 6px; color: var(--ink-2); }

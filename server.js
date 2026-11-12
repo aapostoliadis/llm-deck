@@ -715,8 +715,8 @@ http.createServer(async (req, res) => {
       if (req.url === '/api/update-check') { manualReleaseCheck = true; return checkRelease(latest => send(res, 200, { ok: !!latest, latest, current: RELEASE, newer: newRelease })); }
       if (updateState && updateState.running) return send(res, 409, { ok: false, error: 'an update is already running' });
       if (!newRelease) return send(res, 400, { ok: false, error: 'no newer release to update to' });
-      const target = newRelease; updateState = { running: target };
-      require('./update.js').run(target, err => {
+      const target = newRelease; updateState = { running: target, phase: 'starting', percent: null };
+      require('./update.js').run(target, p => { if (updateState && updateState.running === target) updateState = { running: target, phase: p.phase, percent: p.percent, bytes: p.bytes }; }, err => {
         if (err) { updateState = { failed: String(err.message || err) }; return; }
         updateState = { done: target }; restartDeck();
       });
