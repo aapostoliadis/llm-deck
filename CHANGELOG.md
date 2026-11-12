@@ -2,7 +2,14 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
-## 1.5.0, unreleased
+## 1.5.0, 12 November 2026
+
+### Added
+
+- **Update from the left panel.** When a newer release is out, the note has an **Update now** button: the deck
+  downloads that release from GitHub, checks its version, runs its installer (keeping the Codex hook if you have it)
+  and restarts. If anything fails, the current version keeps running and the note says why, with **Try again**.
+  Settings has **Check for updates now**. Updates can only be started on the computer itself, not from the phone link.
 
 ### Changed
 

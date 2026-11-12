@@ -121,12 +121,20 @@ setInterval(refreshUsageService, Math.max(1, cfg.usageCheckMinutes || 5) * 60e3)
 const RELEASE = require('./version.js');
 let newRelease = null, releaseCheckedAt = 0;
 const newerThan = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
-function checkRelease() {
+let manualReleaseCheck = false, updateState = null; // updateState: { running } or { failed: message }
+function checkRelease(cb) {
   releaseCheckedAt = Date.now();
+  if (process.env.LLM_DECK_TEST_LATEST) { const tag = process.env.LLM_DECK_TEST_LATEST; newRelease = newerThan(tag, RELEASE) ? tag : null; if (cb) cb(tag); return; } // automated tests only
   require('https').get({ host: 'api.github.com', path: '/repos/aapostoliadis/llm-deck/releases/latest', timeout: 15000, headers: { 'User-Agent': 'llm-deck', Accept: 'application/vnd.github+json' } }, res => {
     let b = ''; res.on('data', d => (b += d));
-    res.on('end', () => { try { const tag = String(JSON.parse(b).tag_name || '').replace(/^v/, ''); newRelease = tag && newerThan(tag, RELEASE) ? tag : null; } catch (_) {} });
-  }).on('timeout', function () { this.destroy(); }).on('error', () => {});
+    res.on('end', () => { let tag = ''; try { tag = String(JSON.parse(b).tag_name || '').replace(/^v/, ''); newRelease = tag && newerThan(tag, RELEASE) ? tag : null; } catch (_) {} if (cb) cb(tag || null); });
+  }).on('timeout', function () { this.destroy(); }).on('error', () => { if (cb) cb(null); });
+}
+// after an update, start a fresh deck and let this one go (a watchdog or launchd may also restart it; a second copy just exits)
+function restartDeck() {
+  const code = "setTimeout(() => require('child_process').spawn(process.argv[1], [process.argv[2]], { cwd: process.argv[3], detached: true, stdio: 'ignore', windowsHide: true }).unref(), 1500)";
+  require('child_process').spawn(process.execPath, ['-e', code, process.execPath, path.join(__dirname, 'server.js'), __dirname], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  setTimeout(() => process.exit(0), 300);
 }
 setInterval(() => { if (!cfg.updateCheck) { newRelease = null; return; } if (Date.now() - releaseCheckedAt > 24 * 3600e3) checkRelease(); }, 60e3);
 setTimeout(refreshOfficial, 1000);
@@ -488,7 +496,7 @@ function state() {
   extras.decorate(sessions, cfg);
   try { phoneAlerts(sessions); } catch (_) {}
   extras.dropHidden(sessions);
-  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, problems: problems(), release: RELEASE, newRelease: cfg.updateCheck ? newRelease : null, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, showWeather: cfg.showWeather !== false, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
+  return { appUpdates: appVersions, health: extras.health(cfg), deck: { quietHours: cfg.quietHours || '22:00-08:00', sound: cfg.alertSound !== false, olderHours: cfg.olderHours || 3, usageCheck: !!cfg.usageCheck, usageError: usageServiceError, problems: problems(), release: RELEASE, newRelease: (cfg.updateCheck || manualReleaseCheck) ? newRelease : null, updateState, quickReplies: cfg.quickReplies || [], autoTheme: cfg.autoTheme !== false, dimAtNight: cfg.dimAtNight !== false, dimAfterMinutes: cfg.dimAfterMinutes || 10, pixelShift: cfg.pixelShift !== false, staleMinutes: cfg.staleMinutes || 30, showWeather: cfg.showWeather !== false, version: v3.version() }, sessions, usage: cache.usage, config: { city: cfg.city, latitude: cfg.latitude, longitude: cfg.longitude }, now };
 }
 
 // ---------- opening terminals ----------
@@ -700,6 +708,19 @@ http.createServer(async (req, res) => {
       const b = await body(req); const topic = String((b && b.topic) || '');
       if (!/^[\w-]{1,64}$/.test(topic)) return send(res, 400, { ok: false });
       return sendAlert(topic, 'LLM Deck', 'Test alert: phone alerts work.', ok => send(res, ok ? 200 : 502, { ok }));
+    }
+    if (req.method === 'POST' && (req.url === '/api/update' || req.url === '/api/update-check')) {
+      const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+      if (!local) return send(res, 403, { ok: false, error: 'updates can only be started on this computer' });
+      if (req.url === '/api/update-check') { manualReleaseCheck = true; return checkRelease(latest => send(res, 200, { ok: !!latest, latest, current: RELEASE, newer: newRelease })); }
+      if (updateState && updateState.running) return send(res, 409, { ok: false, error: 'an update is already running' });
+      if (!newRelease) return send(res, 400, { ok: false, error: 'no newer release to update to' });
+      const target = newRelease; updateState = { running: target };
+      require('./update.js').run(target, err => {
+        if (err) { updateState = { failed: String(err.message || err) }; return; }
+        updateState = { done: target }; restartDeck();
+      });
+      return send(res, 202, { ok: true, updating: target });
     }
     if (req.method === 'POST' && req.url === '/api/touch') { // a tap on the deck, so the hooks don't count it as desk activity
       try { fs.writeFileSync(path.join(DATA, 'touch.json'), JSON.stringify({ at: Date.now() })); } catch (_) {}

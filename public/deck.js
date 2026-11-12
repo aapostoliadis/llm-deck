@@ -340,7 +340,7 @@
       + '<div class="set-row"><label><input type="checkbox" id="sShift"> Shift the layout slightly over time</label></div><div class="set-row"><label><input type="checkbox" id="sWeather"> Show the weather</label></div></div>'
       + '<div class="set-sec"><h4>Reminders and cleanup</h4><div class="set-row"><span>Remind me again after</span><input type="number" id="sStale" min="5" max="240"><span>minutes of waiting</span></div>'
       + '<div class="set-row"><button type="button" class="ghost" id="sUnhide" style="flex:none;padding:0 18px">Show hidden cards again</button><span id="sHiddenN" class="sub" style="margin:0"></span></div>'
-      + '<div class="set-row"><button type="button" class="ghost" id="sSelfTest" style="flex:none;padding:0 18px">Run self-test</button></div></div>'
+      + '<div class="set-row"><button type="button" class="ghost" id="sSelfTest" style="flex:none;padding:0 18px">Run self-test</button><button type="button" class="ghost" id="sUpdCheck" style="flex:none;padding:0 18px">Check for updates now</button></div></div>'
       + '<div class="set-sec"><h4>Backup</h4><div class="set-row"><button type="button" class="ghost" id="sBackup" style="flex:none;padding:0 18px">Download backup</button><button type="button" class="ghost" id="sRestore" style="flex:none;padding:0 18px">Restore from file</button><input type="file" id="sRestoreFile" accept=".json,application/json" hidden></div><p class="sub" style="margin:4px 0 0">The deck also keeps a daily backup for each day of the week.</p></div>'
       + '<div class="set-sec"><h4>Phone</h4><div class="set-row"><label><input type="checkbox" id="sRemote"> Open the deck from my phone on this Wi-Fi</label></div><div id="sPhone"></div></div>'
       + '<div class="modal-actions"><button type="button" data-close>Cancel</button><button type="button" class="primary" id="sSave">Save</button></div>';
@@ -354,6 +354,10 @@
       q('#sStale').value = c.staleMinutes || 30; q('#sHiddenN').textContent = (data.hiddenCount || 0) + ' hidden';
       q('#sUnhide').addEventListener('click', async () => { try { await fetch('/api/unhide-all', { method: 'POST' }); } catch (_) {} q('#sHiddenN').textContent = '0 hidden'; toast('Hidden cards are back'); poll(); });
       q('#sSelfTest').addEventListener('click', () => { closeModal(); startSelfTest(); });
+      q('#sUpdCheck').addEventListener('click', async () => {
+        try { const r = await (await fetch('/api/update-check', { method: 'POST' })).json(); toast(!r.ok ? 'Couldn\u2019t reach GitHub' : r.newer ? 'LLM Deck ' + r.newer + ' is out: see the left panel' : 'You have the latest version (' + r.current + ')'); poll(); }
+        catch (_) { toast('Couldn\u2019t reach GitHub'); }
+      });
       q('#sTopicNew').addEventListener('click', () => { const b = new Uint8Array(10); crypto.getRandomValues(b); q('#sTopic').value = 'llmdeck-' + [...b].map(x => (x % 36).toString(36)).join(''); });
       q('#sTopicTest').addEventListener('click', async () => {
         const t = q('#sTopic').value.trim(); if (!/^[\w-]{1,64}$/.test(t)) return toast('Enter or make a topic first');
@@ -455,9 +459,23 @@
   }
   function updateNote(v) {
     let n = document.getElementById('updNote');
-    if (!v) { if (n) n.remove(); return; }
+    const st = DECK.updateState || {};
+    if (!v && !st.running && !st.failed) { if (n) n.remove(); return; }
     if (!n) { n = document.createElement('div'); n.id = 'updNote'; n.className = 'upd-note'; const rail = document.querySelector('.rail-actions'); if (rail) rail.parentNode.insertBefore(n, rail); else document.body.appendChild(n); }
-    n.textContent = 'LLM Deck ' + v + ' is out. To update, run git pull, then node install.js.';
+    const here = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+    const btn = label => here ? ' <button type="button" class="ghost" id="updNow" style="margin-top:6px;padding:0 14px">' + label + '</button>' : ' Update it from the deck\u2019s own screen.';
+    const key = st.running ? 'run:' + st.running : st.failed ? 'fail:' + st.failed : 'new:' + v;
+    if (n.dataset.key === key) return;
+    n.dataset.key = key;
+    if (st.running) n.textContent = 'Updating to LLM Deck ' + st.running + '. The deck restarts in a moment.';
+    else if (st.failed) n.innerHTML = 'The update didn\u2019t finish: ' + esc(st.failed) + '. This version keeps running.' + (v ? btn('Try again') : '');
+    else n.innerHTML = 'LLM Deck ' + esc(v) + ' is out.' + btn('Update now');
+    const b = document.getElementById('updNow');
+    if (b) b.addEventListener('click', async e => {
+      e.stopPropagation(); const label = b.textContent; b.disabled = true; b.textContent = 'Starting\u2026';
+      try { const r = await (await fetch('/api/update', { method: 'POST' })).json(); if (!r.ok) { toast(r.error || 'The update couldn\u2019t start'); b.disabled = false; b.textContent = label; } else poll(); }
+      catch (_) { toast('The update couldn\u2019t start'); b.disabled = false; b.textContent = label; }
+    });
   }
 
   function problemNote(list) {
