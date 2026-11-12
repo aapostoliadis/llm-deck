@@ -66,7 +66,7 @@ const get = p => new Promise(res => {
     for (const p of ['/deck.css', '/deck.js', '/api/config', '/api/summary', '/api/suggest-groups', '/api/backup']) { const r = await get(p); ok('GET ' + p, r.code === 200); }
     const b = await get('/api/backup');
     ok('backup excludes the private phone link', b.json && b.json.kind === 'backup' && !('remoteToken' in (b.json.config || {})));
-    const card = (s.sessions || []).find(x => x.app === 'claude');
+    const card = (s.sessions || []).find(x => x.app === 'claude' && x.state === 'ready') || (s.sessions || []).find(x => x.app === 'claude'); // a session that has finished a reply
     if (card) { const p = await get('/api/peek?id=' + encodeURIComponent(card.id)); maybe('peek returns a reply', p.code === 200 && p.json && p.json.peek, card.title); }
     if (process.platform === 'win32') {
       const h = s.health || {};
