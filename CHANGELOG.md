@@ -2,7 +2,7 @@
 
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
-## 1.6.0, unreleased
+## 1.6.0, 12 November 2026
 
 ### Added
 
