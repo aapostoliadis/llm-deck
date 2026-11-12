@@ -3,12 +3,11 @@
 All notable changes to LLM Deck, newest first. Versions follow [semantic versioning](https://semver.org).
 
 ## 1.5.1, 12 November 2026
-## 1.5.0, 12 November 2026
-## 1.5.0, 12 November 2026### Fixed
-## 1.5.0, 12 November 2026
-## 1.5.0, 12 November 2026- The self-check tested "peek" on the first Claude Code card it found, which could be a session with no reply yet. It
-## 1.5.0, 12 November 2026  now picks one that has finished a reply.
-## 1.5.0, 12 November 2026
+
+### Fixed
+
+- The self-check tested "peek" on the first Claude Code card it found, which could be a session with no reply yet. It now picks one that has finished a reply.
+
 ## 1.5.0, 12 November 2026
 
 ### Added
