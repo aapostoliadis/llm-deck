@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="900" alt="LLM Deck in action: a session finishes and moves to New result, a permission request is approved with a one-second hold, and a new question arrives on a waiting card">
+  <img src="docs/demo.gif" width="900" alt="LLM Deck in action: a session finishes and moves to New result, a permission request is approved with a one-second hold, and a question arrives with the agent's own options and one tap answers it">
 </p>
 
 ## Why
